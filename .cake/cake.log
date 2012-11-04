@@ -1,0 +1,48 @@
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=40626]>, :connections #<Ref@17f0d3b8: #{}>}
+[WARNING] Overriding profile: 'null' (source: pom) with new instance from source: pom
+[WARNING] Overriding profile: 'null' (source: pom) with new instance from source: pom
+[WARNING] Overriding profile: 'null' (source: pom) with new instance from source: pom
+[INFO] artifact org.clojure:clojure: checking for updates from clojure
+[INFO] artifact org.clojure:clojure: checking for updates from clojure-snapshots
+[INFO] artifact org.clojure:clojure: checking for updates from maven
+[INFO] artifact org.clojure:clojure: checking for updates from stuartsierra-releases
+hi
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=35459]>, :connections #<Ref@53b5ae28: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=28438]>, :connections #<Ref@63fe0e45: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=57941]>, :connections #<Ref@238258f1: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=59799]>, :connections #<Ref@18a52c57: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=47175]>, :connections #<Ref@4021065: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=62874]>, :connections #<Ref@3cbcef07: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=57435]>, :connections #<Ref@18a52c57: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=36118]>, :connections #<Ref@53b5ae28: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=22197]>, :connections #<Ref@6698984d: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=46444]>, :connections #<Ref@17f0d3b8: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=63682]>, :connections #<Ref@52d17b70: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=38188]>, :connections #<Ref@17f0d3b8: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=22345]>, :connections #<Ref@4021065: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=27140]>, :connections #<Ref@17f0d3b8: #{}>}
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=42102]>, :connections #<Ref@3c5b074c: #{}>}
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=59400]>, :connections #<Ref@4021065: #{}>}
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+hi
+{:server-socket #<ServerSocket ServerSocket[addr=localhost/127.0.0.1,port=0,localport=16533]>, :connections #<Ref@238258f1: #{}>}
+hi
+hi

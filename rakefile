@@ -1,0 +1,30 @@
+task :compile do
+	sh "lein check"
+end
+
+task :run do
+	sh "lein run -m #{File.basename(Dir.pwd).gsub('_','-')}.core"
+	#sh "cake run src/chapter_tracker/run.clj"
+	#sh "lein run -m chapter-tracker.file-matching/rescan-all"
+end
+
+task :create_db do
+	sh "lein run -m chapter-tracker.schema/create-tables"
+end
+
+task :test do
+	#sh "konsole -e lein repl &"
+	sh <<-BASH
+		lein repl <<'EOF'
+		(use 'chapter-tracker.view.tools)
+		(macroexpand-1 '(add-with-constraints my-form my-component
+							(gridx 3)
+							(gridy 3)
+						))
+EOF
+	BASH
+end
+
+task :clean do
+	sh "cake kill"
+end
