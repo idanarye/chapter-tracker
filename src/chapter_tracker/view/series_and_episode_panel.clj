@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.series-and-episode-panel
+(ns chapter-tracker.view.series-and-episode-panel (:gen-class)
   (:use [chapter-tracker.view tools episode-table])
   (:use chapter-tracker.model)
 )

@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.tools)
+(ns chapter-tracker.view.tools (:gen-class))
 
 (import
   '(java.awt GridBagLayout GridBagConstraints Dimension)

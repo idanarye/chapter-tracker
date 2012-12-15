@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.create-directory-dialog
+(ns chapter-tracker.view.create-directory-dialog (:gen-class)
   (:require clojure.string)
   (:use chapter-tracker.view.tools)
   (:use chapter-tracker.model)

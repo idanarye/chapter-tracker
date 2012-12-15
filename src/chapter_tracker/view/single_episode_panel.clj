@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.single-episode-panel
+(ns chapter-tracker.view.single-episode-panel (:gen-class)
   (:use clojure.java.shell)
   (:use chapter-tracker.view.tools)
   (:use chapter-tracker.model)

@@ -1,4 +1,4 @@
-(ns chapter-tracker.view
+(ns chapter-tracker.view (:gen-class)
   ;(:use seesaw.core)
   (:use chapter-tracker.view.main-frame)
 )

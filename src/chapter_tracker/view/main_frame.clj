@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.main-frame
+(ns chapter-tracker.view.main-frame (:gen-class)
   (:use [chapter-tracker file-matching])
   (:use [chapter-tracker.view tools create-media-dialog create-series-dialog series-and-episode-panel single-episode-panel series-directories-panel])
 )

@@ -1,4 +1,4 @@
-(ns chapter-tracker.db
+(ns chapter-tracker.db (:gen-class)
   (:require [clojure.java.jdbc :as sql])
 )
 

@@ -1,4 +1,4 @@
-(ns chapter-tracker.file-matching
+(ns chapter-tracker.file-matching (:gen-class)
   (:require clojure.string)
   (:use chapter-tracker.db)
   (:use chapter-tracker.model)

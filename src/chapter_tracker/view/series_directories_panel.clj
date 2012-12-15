@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.series-directories-panel
+(ns chapter-tracker.view.series-directories-panel (:gen-class)
   (:use [chapter-tracker.view tools create-directory-dialog])
   (:use chapter-tracker.model)
 )

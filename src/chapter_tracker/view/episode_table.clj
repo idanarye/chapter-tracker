@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.episode-table
+(ns chapter-tracker.view.episode-table (:gen-class)
   (:use chapter-tracker.view.tools)
   (:use chapter-tracker.model)
 )

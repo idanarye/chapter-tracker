@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.create-series-dialog
+(ns chapter-tracker.view.create-series-dialog (:gen-class)
   (:use chapter-tracker.view.tools)
   (:use chapter-tracker.model)
 )

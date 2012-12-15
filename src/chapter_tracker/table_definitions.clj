@@ -1,4 +1,4 @@
-(ns chapter-tracker.table-definitions)
+(ns chapter-tracker.table-definitions (:gen-class))
 
 (def tables (into {} (map
                        (fn [[t-name t-fields]]

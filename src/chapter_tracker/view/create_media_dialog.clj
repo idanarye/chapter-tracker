@@ -1,4 +1,4 @@
-(ns chapter-tracker.view.create-media-dialog
+(ns chapter-tracker.view.create-media-dialog (:gen-class)
   (:use chapter-tracker.view.tools)
   (:use chapter-tracker.model)
 )
