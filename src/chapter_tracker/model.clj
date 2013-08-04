@@ -102,6 +102,16 @@
   )
 )
 
+(defmulti delete-series-record number?)
+(defmethod delete-series-record false [series-record]
+  (delete-series-record (:series-id series-record))
+)
+(defmethod delete-series-record true [series-id]
+  (wrap-connection (sql/delete-rows :serieses ["id=?" series-id])
+                   (sql/delete-rows :directories ["series=?" series-id])
+                   (sql/delete-rows :episodes ["series=?" series-id]))
+)
+
 (defn store-new-episodes [episodes]
   (wrap-connection (apply sql/insert-records :episodes episodes))
 )

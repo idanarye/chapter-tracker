@@ -7,11 +7,10 @@
   '(javax.swing JFrame JLabel JTextField JComboBox)
 )
 
-(defn create-create-series-dialog[]
+(defn create-create-series-dialog [update-serieses-list-function]
   (create-frame {:title "Create Series"}
                 (let [media-type-field    (JComboBox. (to-array (fetch-media-records)))
                       series-name-field   (JTextField. 10)
-                      ;series-dir-field    (JTextField. 10)
                      ]
                   (.setLayout frame (GridBagLayout.))
 
@@ -21,18 +20,12 @@
                   (add-with-constraints (JLabel. "Series Name:") (gridx 0) (gridy 1))
                   (add-with-constraints series-name-field (gridx 1) (gridy 1) (gridwidth 2) (fill GridBagConstraints/BOTH))
 
-                  ;(add-with-constraints (JLabel. "Directory") (gridx 0) (gridy 2))
-                  ;(add-with-constraints series-dir-field   (gridx 1) (gridy 2) (fill GridBagConstraints/BOTH))
-                  ;(add-with-constraints (action-button "..."
-                                                       ;(if-let [dir (choose-dir (-> media-type-field .getSelectedItem :base-dir))]
-                                                         ;(.setText series-dir-field dir))
-                                        ;) (gridx 2) (gridy 2) (fill GridBagConstraints/BOTH))
-
                   (add-with-constraints (action-button "SAVE"
-                                                             (create-series (.getSelectedItem media-type-field)
-                                                                            (.getText series-name-field))
-                                                             (.dispose frame)
-                                              )
+                                                       (create-series (.getSelectedItem media-type-field)
+                                                                      (.getText series-name-field))
+                                                       (update-serieses-list-function)
+                                                       (.dispose frame)
+                                        )
                                         (gridx 0) (gridy 2) (gridwidth 3) (fill GridBagConstraints/BOTH))
                 )
   )

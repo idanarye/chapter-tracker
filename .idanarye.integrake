@@ -1,0 +1,9 @@
+task :run do
+	cmd 'Require!'
+	cmd 'Require! chapter_tracker.core'
+	Eval '(chapter-tracker.core/-main)'
+end
+
+task :uberjar do
+	sh 'lein uberjar'
+end

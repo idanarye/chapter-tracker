@@ -51,7 +51,7 @@
                                  )
         directories-scroll-pane (JScrollPane. directories-table)
        ]
-    [(create-panel {:width 220 :height 100} ;series-directories panel
+    [(create-panel {:width 200 :height 150} ;series-directories panel
 
                    (add-with-constraints create-directory-button
                                          (gridx 0) (gridy 0) (fill GridBagConstraints/BOTH))
@@ -61,19 +61,13 @@
                                          (gridx 2) (gridy 0) (fill GridBagConstraints/BOTH))
 
                    (.. directories-table getModel (setColumnIdentifiers directory-table-captions))
-                   (.setPreferredSize directories-scroll-pane (Dimension. 140 300))
+                   (.setPreferredSize directories-scroll-pane (Dimension. 140 200))
                    (add-with-constraints directories-scroll-pane
                                          (gridx 0) (gridy 1) (gridwidth 3) (fill GridBagConstraints/BOTH))
      ) (fn [series-record] ;updating function
          (reset! series-record-atom series-record)
-         (.setText series-name-label (.toString series-record))
+         (.setText series-name-label (->> (or series-record "") .toString (take 15) (apply str)))
          (load-series-directories-to-table directories-table series-record)
-         ;(doseq [[gui-field record-field] {number-field    :series-number
-                                           ;name-field      :series-name
-                                           ;file-field      :series-file
-                                          ;}]
-           ;(.setText gui-field (-> series-record record-field (or "") .toString))
-         ;)
        )]
   )
 )

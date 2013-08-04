@@ -94,7 +94,7 @@
                                            file-field            :episode-file
                                            date-of-read-field    :date-of-read
                                           }]
-                 (.setText gui-field (-> episode-record record-field (or "") .toString))
+                 (.setText gui-field (-> episode-record (or {}) record-field (or "") .toString))
          )
          (reset! episode-record-atom episode-record)
        )]
