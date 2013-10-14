@@ -22,3 +22,14 @@
     )
   )
 )
+
+(defn -test[]
+  ;(chapter-tracker.file-matching/rescan-series (chapter-tracker.model/fetch-series-record 9))
+  ;(let [ep (chapter-tracker.file-matching/guess-episode "kenichi v(?<v>\\d+) c(?<c>\\d+)" "kenichi v2 c8")]
+    ;(println ep))
+  ;(println "===")
+  ;(let [ep (chapter-tracker.file-matching/guess-episode "kenichi" "hsdp kenichi  c1")]
+    ;(println ep))
+  ;(println (fetch-episode-record 20))
+  ;(chapter-tracker.model/EpisodeRecord.)
+)

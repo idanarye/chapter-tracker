@@ -163,7 +163,7 @@
   (wrap-connection (sql/delete-rows :directories ["id=?" directory-id]))
 )
 
-(defrecord EpisodeRecord [episode-id series episode-number episode-name episode-file date-of-read]
+(defrecord EpisodeRecord [episode-id series volume-number episode-number episode-name episode-file date-of-read]
   Object
   (toString [this] (str
                      (-> this :series .toString)
@@ -181,6 +181,7 @@
   (wrap-connection (sql/with-query-results rs ["SELECT * FROM episodes WHERE series=?",(:series-id series)]
                                            (doall (map #(EpisodeRecord. (:id %)
                                                                         series
+                                                                        (:volume %)
                                                                         (:number %)
                                                                         (:name %)
                                                                         (:file %)
@@ -194,6 +195,7 @@
                                            (if-let [first-in-rs (first rs)]
                                              (EpisodeRecord. (:id first-in-rs)
                                                              (-> first-in-rs :series fetch-series-record)
+                                                             (:volume first-in-rs)
                                                              (:number first-in-rs)
                                                              (:name first-in-rs)
                                                              (:file first-in-rs)

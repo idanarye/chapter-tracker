@@ -12,7 +12,8 @@
 
 (defn create-episode-panel-and-updating-function []
   (let [name-field          (JTextField. 10)
-        number-field        (JTextField. 5)
+        volume-field        (JTextField. 5)
+        episode-field       (JTextField. 5)
         file-field          (JTextField. 25)
         date-of-read-field  (JTextField. 5)
         episode-record-atom (atom nil)
@@ -25,15 +26,20 @@
                    (add-with-constraints name-field
                                          (gridx 1) (gridy 0) (fill GridBagConstraints/BOTH))
 
-                   (add-with-constraints (JLabel. "Number:")
+                   (add-with-constraints (JLabel. "Volume:")
                                          (gridx 2) (gridy 0) (fill GridBagConstraints/BOTH))
-                   (add-with-constraints number-field
+                   (add-with-constraints volume-field
                                          (gridx 3) (gridy 0) (fill GridBagConstraints/BOTH))
+
+                   (add-with-constraints (JLabel. "Episode:")
+                                         (gridx 4) (gridy 0) (fill GridBagConstraints/BOTH))
+                   (add-with-constraints episode-field
+                                         (gridx 5) (gridy 0) (fill GridBagConstraints/BOTH))
 
                    (add-with-constraints (JLabel. "File:")
                                          (gridx 0) (gridy 1) (fill GridBagConstraints/BOTH))
                    (add-with-constraints file-field
-                                         (gridx 1) (gridy 1) (gridwidth 3) (fill GridBagConstraints/BOTH))
+                                         (gridx 1) (gridy 1) (gridwidth 5) (fill GridBagConstraints/BOTH))
                    (add-with-constraints (action-button "..."
                                                         (if-let [file (choose-file)]
                                                           (.setText file-field file)))
@@ -44,9 +50,9 @@
                                          ) (gridx 0) (gridy 2) (gridwidth 5) (fill GridBagConstraints/BOTH))
 
                    (add-with-constraints (JLabel. "Date of Read:")
-                                         (gridx 0) (gridy 3) (gridwidth 2) (fill GridBagConstraints/BOTH))
+                                         (gridx 0) (gridy 3) (gridwidth 4) (fill GridBagConstraints/BOTH))
                    (add-with-constraints date-of-read-field
-                                         (gridx 3) (gridy 3) (gridwidth 2) (fill GridBagConstraints/BOTH))
+                                         (gridx 3) (gridy 3) (gridwidth 4) (fill GridBagConstraints/BOTH))
                    (add-with-constraints (action-button "NOW"
                                                         (let [now              (java.util.Date.)
                                                               date-formatter   (java.text.SimpleDateFormat. "YYYY-MM-dd HH:mm:ss")
@@ -58,7 +64,8 @@
                                                         )
                                          ) (gridx 2) (gridy 3) (fill GridBagConstraints/BOTH))
 
-                   (doseq [[gui-field column-name db-field] [[number-field          :episode-number   :number      ]
+                   (doseq [[gui-field column-name db-field] [[volume-field          :volume-number    :volume      ]
+                                                             [episode-field         :episode-number   :number      ]
                                                              [name-field            :episode-name     :name        ]
                                                              [file-field            :episode-file     :file        ]
                                                              [date-of-read-field    :date-of-read     :date_of_read]
@@ -89,7 +96,8 @@
      ) (fn [episode-record update-list-function] ;updating function
          (reset! episode-record-atom nil)
          (reset! update-list-function-atom update-list-function)
-         (doseq [[gui-field record-field] {number-field          :episode-number
+         (doseq [[gui-field record-field] {volume-field          :volume-number
+                                           episode-field         :episode-number
                                            name-field            :episode-name
                                            file-field            :episode-file
                                            date-of-read-field    :date-of-read

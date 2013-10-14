@@ -10,8 +10,9 @@
 )
 
 (def episode-table-columns [
-                            {:caption "Id"             :field :episode-id   :editable false}
-                            {:caption "Number"         :field :episode-number   :editable true}
+                            {:caption "Id"             :field :episode-id       :editable false}
+                            {:caption "Volume"         :field :volume-number    :editable true}
+                            {:caption "Episode"        :field :episode-number   :editable true}
                             {:caption "Name"           :field :episode-name     :editable true}
                             {:caption "DateOfRead"     :field :date-of-read     :editable false}
                            ])
@@ -63,10 +64,18 @@
         (map (fn [episode]
                (to-array (map #(% episode) (map :field episode-table-columns)))
              )
-             (sort-by #(:episode-number %) #(if (every? number? (list %1 %2))
-                                              (> %1 %2)
-                                              (number? %2)
-                                            )
+             ;(sort-by #(vector (or (:volume-number %) 0) (:episode-number %)) #(if (every? number? (list %1 %2))
+             (sort-by #(vector (- (or (:volume-number %) 0)) (- (:episode-number %)))
+                      ;(fn [[v1 c1] [v2 c2]]
+                        ;(cond
+                          ;(= (number? v1) (number? v2)) (if (not= v1 v2) (> v1 v2)
+                                                          ;(if (every? number? (concat c1 c2))
+                                                            ;(> c1 c2)
+                                                            ;(number? c2)
+                                                          ;))
+                          ;(number? v1) false
+                          ;:else true
+                      ;))
                       (fetch-episode-records-for to-series)
              )))
       episode-table-captions

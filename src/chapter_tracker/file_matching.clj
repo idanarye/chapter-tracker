@@ -8,19 +8,20 @@
 
 (defn guess-episode[pattern file-name]
   (let [regex (re-pattern pattern)
+        matcher (re-matcher regex file-name)
         series-name-in-file-name (re-find regex file-name)]
-    (if series-name-in-file-name
-      (do;then
-        (let [series-name-index (.indexOf file-name series-name-in-file-name)
-              rest-of-file-name (.substring file-name (+ series-name-index (.length series-name-in-file-name)))
-              assumed-episode-number (re-find #"\d+" rest-of-file-name)
-             ]
-          (if assumed-episode-number (Integer. assumed-episode-number))
-        )
-      )
-      (do;else
-        :not-belonging
-      )
+    (if (.find matcher)
+      (try
+        [
+         (try (.group matcher "v") (catch Exception e nil)) ; Ignore if no volume found
+         (.group matcher "c") ; Bail if no episode found
+        ]
+        (catch Exception e ; In case there is no such group
+          (let [rest-of-file-name (.substring file-name (.end matcher))
+                assumed-episode-number (re-find #"\d+" rest-of-file-name)]
+            [nil (if assumed-episode-number (Integer. assumed-episode-number))]
+          )))
+      :not-belonging
     )
   )
 )
@@ -43,13 +44,15 @@
                                 files-already-loaded (all-files-for (:series-id series))
                                ]
                             (sort-by :number (remove nil? (for [file (filter #(not (files-already-loaded (.toString %))) files)]
-                                                            (let [guessed-episode (guess-episode pattern (.getName file))]
-                                                              (when-not (= guessed-episode :not-belonging)
-                                                                {:series (:series-id series)
-                                                                 :number guessed-episode
-                                                                 :file (.toString file)
-                                                                 :name (str (:series-name series) " " (or guessed-episode "???"))
-                                                                }
+                                                            (let [guess (guess-episode pattern (.getName file))]
+                                                              (when-not (= guess :not-belonging)
+                                                                (let [[guessed-volume guessed-episode] guess]
+                                                                  {:series (:series-id series)
+                                                                   :volume guessed-volume
+                                                                   :number guessed-episode
+                                                                   :file (.toString file)
+                                                                   :name (str (:series-name series) (if guessed-volume (str " v" guessed-volume) "") " c" (or guessed-episode "???"))
+                                                                  })
                                                               )
                                                             )
                                                           )

@@ -21,6 +21,7 @@
                                      ]
                         :episodes    [
                                       [:series :integer]
+                                      [:volume :integer]
                                       [:number :integer]
                                       [:name :text]
                                       [:file :text]

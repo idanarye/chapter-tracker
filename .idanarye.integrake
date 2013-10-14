@@ -4,6 +4,12 @@ task :run do
 	Eval '(chapter-tracker.core/-main)'
 end
 
+task :test do
+	cmd 'Require!'
+	cmd 'Require! chapter_tracker.core'
+	Eval '(chapter-tracker.core/-test)'
+end
+
 task :uberjar do
 	sh 'lein uberjar'
 end
