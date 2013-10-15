@@ -17,17 +17,28 @@
                             {:caption "DateOfRead"     :field :date-of-read     :editable false}
                            ])
 
+(def editable-column-names-set (set [:volume-number
+                                     :episode-number
+                                     :episode-name
+                                     :date-of-read]))
+(def editable-column-names-map
+  (apply hash-map (flatten
+                    (filter #(editable-column-names-set (first %))
+                                                         (map-indexed #(list (:field %2) %1) episode-table-columns)))))
+
+
 (def episode-table-captions (to-array (map :caption episode-table-columns)))
 
 (defn make-table-updating-lambda [table row]
   (fn [column new-value]
-    (let [column-number (condp = column
-                          :episode-number 1
-                          :episode-name   2
-                          :date-of-read   3
-                          :date-of-read   3
-                          false
-                        )]
+    (let [column-number (editable-column-names-map column)]
+    ;(let [column-number (condp = column
+                          ;:episode-number 1
+                          ;:episode-name   2
+                          ;:date-of-read   3
+                          ;:date-of-read   3
+                          ;false
+                        ;)]
       (if column-number (.. table getModel (setValueAt new-value row column-number)))
     )
   )
