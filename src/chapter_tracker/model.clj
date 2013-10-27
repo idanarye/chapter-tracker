@@ -155,6 +155,31 @@
                    ))
 )
 
+(defn fetch-directory-record [directory-id]
+  (wrap-connection (sql/with-query-results rs ["SELECT * FROM directories WHERE id=?",directory-id]
+                     (if-let [first-in-rs (first rs)]
+                       (DirectoryRecord. (:id first-in-rs)
+                                         (-> first-in-rs :series fetch-series-record)
+                                         (:dir first-in-rs)
+                                         (:pattern first-in-rs)
+                       ))))
+)
+
+(defn update-directory [directory-id new-values-hash]
+  (try
+    (wrap-connection (sql/update-values :directories
+                                        ["id=?" directory-id]
+                                        new-values-hash
+                     ))
+    true
+    (catch Exception e
+      (println "Unable to update")
+      (println \tab (.getMessage e))
+      false
+    )
+  )
+)
+
 (defmulti delete-directory-record number?)
 (defmethod delete-directory-record false [directory-record]
   (delete-directory-record (:directory-id directory-record))

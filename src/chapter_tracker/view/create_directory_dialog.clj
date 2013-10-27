@@ -8,11 +8,18 @@
   '(javax.swing JFrame JLabel JTextField)
 )
 
-(defn create-create-directory-dialog[series-record on-close-function]
-  (create-frame {:title (str "Create Directory For " (.toString series-record))}
+(defn create-create-directory-dialog[series-record on-close-function & [edit-directory-id]]
+  (create-frame {:title (str (if edit-directory-id "Edit" "Create") " Directory For " (.toString series-record))}
                 (let [dir-field    (JTextField. 20)
                       pattern-field  (JTextField. (clojure.string/replace (:series-name series-record) #"\s" ".*"))
                      ]
+
+                  (when edit-directory-id
+                    (let [directory (fetch-directory-record edit-directory-id)]
+                      (.setText dir-field (:directory directory))
+                      (.setText pattern-field (:pattern directory))
+                    ))
+
                   (add-with-constraints (JLabel. "Directory") (gridx 0) (gridy 1))
                   (add-with-constraints dir-field   (gridx 1) (gridy 0) (fill GridBagConstraints/BOTH))
                   (add-with-constraints (action-button "..."
@@ -25,9 +32,17 @@
                   (add-with-constraints pattern-field (gridx 1) (gridy 1) (gridwidth 2) (fill GridBagConstraints/BOTH))
 
                   (add-with-constraints (action-button "SAVE"
-                                                       (create-directory series-record
-                                                                         (.getText dir-field)
-                                                                         (.getText pattern-field))
+                                                       (if edit-directory-id
+                                                         ;when saving existing directory:
+                                                         (update-directory edit-directory-id {
+                                                                                              :dir (.getText dir-field)
+                                                                                              :pattern (.getText pattern-field)
+                                                                                             })
+                                                         ;when creating new directory:
+                                                         (create-directory series-record
+                                                                           (.getText dir-field)
+                                                                           (.getText pattern-field))
+                                                       )
                                                        (.dispose frame)
                                                        (on-close-function)
                                               )

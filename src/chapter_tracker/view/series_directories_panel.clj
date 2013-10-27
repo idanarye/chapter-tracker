@@ -4,9 +4,9 @@
 )
 (import
   '(java.awt GridBagConstraints Dimension)
+  '(java.awt.event MouseAdapter)
   '(javax.swing JPanel JTable JScrollPane JLabel)
   '(javax.swing.table DefaultTableModel TableCellRenderer)
-  '(javax.swing.event ListSelectionListener)
 )
 
 (def directory-table-columns [
@@ -64,6 +64,20 @@
                    (.setPreferredSize directories-scroll-pane (Dimension. 140 200))
                    (add-with-constraints directories-scroll-pane
                                          (gridx 0) (gridy 1) (gridwidth 3) (fill GridBagConstraints/BOTH))
+                   (.addMouseListener directories-table (proxy [MouseAdapter] []
+                                                               (mouseClicked [e]
+                                                                 (when (= 2 (.getClickCount e))
+                                                                   (.show (create-create-directory-dialog
+                                                                            @series-record-atom
+                                                                            #(load-series-directories-to-table directories-table
+                                                                                                               @series-record-atom)
+                                                                            (.. directories-table
+                                                                                getModel
+                                                                                (getValueAt (.getSelectedRow directories-table) 0)
+                                                                            )
+                                                                          ))
+                                                                 )
+                                                               )))
      ) (fn [series-record] ;updating function
          (reset! series-record-atom series-record)
          (.setText series-name-label (->> (or series-record "") .toString (take 15) (apply str)))
