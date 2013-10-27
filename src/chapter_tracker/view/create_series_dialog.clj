@@ -22,7 +22,7 @@
 
                   (when edit-series-id
                     (let [series (fetch-series-record edit-series-id)]
-                      (.setSelectedItem media-type-field (->> (range (.getItemCount xxx))
+                      (.setSelectedItem media-type-field (->> (range (.getItemCount media-type-field))
                                                              (map #(.getItemAt media-type-field %))
                                                              (filter #(= % (:media series)))
                                                              first))

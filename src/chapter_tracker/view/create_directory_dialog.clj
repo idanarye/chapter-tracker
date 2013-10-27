@@ -23,7 +23,10 @@
                   (add-with-constraints (JLabel. "Directory") (gridx 0) (gridy 1))
                   (add-with-constraints dir-field   (gridx 1) (gridy 0) (fill GridBagConstraints/BOTH))
                   (add-with-constraints (action-button "..."
-                                                       (if-let [dir (choose-dir (-> series-record :media :base-dir))]
+                                                       (if-let [dir (choose-dir (let [old-dir (.getText dir-field)]
+                                                                                  (if (empty? old-dir)
+                                                                                    (-> series-record :media :base-dir)
+                                                                                    old-dir)))]
                                                          (.setText dir-field dir))
                                         ) (gridx 2) (gridy 0) (fill GridBagConstraints/BOTH))
 
