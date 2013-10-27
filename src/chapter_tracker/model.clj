@@ -102,6 +102,21 @@
   )
 )
 
+(defn update-series [series-id new-values-hash]
+  (try
+    (wrap-connection (sql/update-values :serieses
+                                        ["id=?" series-id]
+                                        new-values-hash
+                     ))
+    true
+    (catch Exception e
+      (println "Unable to update")
+      (println \tab (.getMessage e))
+      false
+    )
+  )
+)
+
 (defmulti delete-series-record number?)
 (defmethod delete-series-record false [series-record]
   (delete-series-record (:series-id series-record))

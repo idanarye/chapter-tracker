@@ -1,9 +1,10 @@
 (ns chapter-tracker.view.series-and-episode-panel (:gen-class)
-  (:use [chapter-tracker.view tools episode-table])
+  (:use [chapter-tracker.view tools episode-table create-series-dialog])
   (:use chapter-tracker.model)
 )
 (import
   '(java.awt GridBagLayout GridBagConstraints Dimension)
+  '(java.awt.event MouseAdapter)
   '(javax.swing JPanel JList JTable JScrollPane)
   '(javax.swing.event ListSelectionListener)
 )
@@ -39,6 +40,16 @@
                                                                   (update-episode-table-function)
                                                                 )
                                                               )))
+
+                   (.addMouseListener serieses-list (proxy [MouseAdapter] []
+                                                      (mouseClicked [e]
+                                                        (when (= 2 (.getClickCount e))
+                                                          (.show (create-create-series-dialog
+                                                                   update-serieses-list-function
+                                                                   (-> serieses-list .getSelectedValue :series-id)
+                                                                 ))
+                                                        )
+                                                          )))
      )
      update-serieses-list-function
      update-episode-table-function

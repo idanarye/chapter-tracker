@@ -7,8 +7,8 @@
   '(javax.swing JFrame JLabel JTextField JComboBox)
 )
 
-(defn create-create-series-dialog [update-serieses-list-function]
-  (create-frame {:title "Create Series"}
+(defn create-create-series-dialog [update-serieses-list-function & [edit-series-id]]
+  (create-frame {:title (if edit-series-id "Edit Series" "Create Series")}
                 (let [media-type-field    (JComboBox. (to-array (fetch-media-records)))
                       series-name-field   (JTextField. 10)
                      ]
@@ -20,9 +20,25 @@
                   (add-with-constraints (JLabel. "Series Name:") (gridx 0) (gridy 1))
                   (add-with-constraints series-name-field (gridx 1) (gridy 1) (gridwidth 2) (fill GridBagConstraints/BOTH))
 
+                  (when edit-series-id
+                    (let [series (fetch-series-record edit-series-id)]
+                      (.setSelectedItem media-type-field (->> (range (.getItemCount xxx))
+                                                             (map #(.getItemAt media-type-field %))
+                                                             (filter #(= % (:media series)))
+                                                             first))
+                      (.setText series-name-field (:series-name series))
+                    ))
+
                   (add-with-constraints (action-button "SAVE"
-                                                       (create-series (.getSelectedItem media-type-field)
-                                                                      (.getText series-name-field))
+                                                       (if edit-series-id
+                                                         ;when saving existing series:
+                                                         (update-series edit-series-id {
+                                                                                        :media_type (-> media-type-field .getSelectedItem :media-id)
+                                                                                        :name (.getText series-name-field)
+                                                                                       })
+                                                         ;when creating new series:
+                                                         (create-series (.getSelectedItem media-type-field)
+                                                                        (.getText series-name-field)))
                                                        (update-serieses-list-function)
                                                        (.dispose frame)
                                         )
