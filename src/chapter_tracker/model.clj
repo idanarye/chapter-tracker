@@ -54,13 +54,14 @@
   )
 )
 
-(defn create-series [media-type series-name]
+(defn create-series [media-type series-name episode-numbers-repeat-each-volume]
   (println "SAVING" (format "%s(%s)" series-name media-type))
   (println (:media-id media-type))
   (try
     (wrap-connection
       (sql/insert-records :serieses {:media_type (:media-id media-type)
-                                     :name       series-name})
+                                     :name       series-name
+                                     :numbers_repeat_each_volume episode-numbers-repeat-each-volume})
     )
     true
     (catch Exception e
@@ -71,7 +72,7 @@
   )
 )
 
-(defrecord SeriesRecord [series-id media series-name]
+(defrecord SeriesRecord [series-id media series-name episode-numbers-repeat-each-volume]
   Object
   (toString [this] (format "%s(%s)" (:series-name this) (-> this :media :media-name)))
 )
@@ -83,6 +84,7 @@
                               (SeriesRecord. (:id row)
                                              (fetch-media-record (:media_type row))
                                              (:name row)
+                                             (:numbers_repeat_each_volume row)
                               )
                             )
     )
@@ -96,6 +98,7 @@
                               (doall (map #(SeriesRecord. (:id %)
                                                           (medias (:media_type %))
                                                           (:name %)
+                                                          (:numbers_repeat_each_volume %)
                                            ) rs))
       )
     )

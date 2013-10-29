@@ -67,29 +67,23 @@
 )
 
 (defn update-episodes-table [episodes-table to-series]
-  (..
-    episodes-table
-    getModel
-    (setDataVector
-      (to-array-2d
-        (map (fn [episode]
-               (to-array (map #(% episode) (map :field episode-table-columns)))
-             )
-             ;(sort-by #(vector (or (:volume-number %) 0) (:episode-number %)) #(if (every? number? (list %1 %2))
-             (sort-by #(vector (- (or (:volume-number %) 0)) (- (:episode-number %)))
-                      ;(fn [[v1 c1] [v2 c2]]
-                        ;(cond
-                          ;(= (number? v1) (number? v2)) (if (not= v1 v2) (> v1 v2)
-                                                          ;(if (every? number? (concat c1 c2))
-                                                            ;(> c1 c2)
-                                                            ;(number? c2)
-                                                          ;))
-                          ;(number? v1) false
-                          ;:else true
-                      ;))
-                      (fetch-episode-records-for to-series)
-             )))
-      episode-table-captions
+  (let [sort-function (if (not= 0 (or (:episode-numbers-repeat-each-volume to-series) 0)) ; Choose the appropriate sort-by function
+                        ;When episodes can not repeat:
+                        #(vector (- (or (:volume-number %) 0)) (- (:episode-number %)))
+                        ;When episodes can repeat:
+                        #(- (:episode-number %)))]
+    (..
+      episodes-table
+      getModel
+      (setDataVector
+        (to-array-2d
+          (map (fn [episode]
+                 (to-array (map #(% episode) (map :field episode-table-columns)))
+               )
+               (sort-by sort-function (fetch-episode-records-for to-series)
+               )))
+        episode-table-captions
+      )
     )
   )
 )

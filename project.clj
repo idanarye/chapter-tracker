@@ -1,4 +1,4 @@
-(defproject chapter-tracker "0.4.0-SNAPSHOT"
+(defproject chapter-tracker "0.5.0-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :main chapter-tracker.core

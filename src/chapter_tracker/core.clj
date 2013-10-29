@@ -24,6 +24,9 @@
 )
 
 (defn -test[]
+  ;(let [series (chapter-tracker.model/fetch-series-record 10)]
+    ;(println series)
+  ;)
   ;(chapter-tracker.file-matching/rescan-series (chapter-tracker.model/fetch-series-record 9))
   ;(let [ep (chapter-tracker.file-matching/guess-episode "kenichi v(?<v>\\d+) c(?<c>\\d+)" "kenichi v2 c8")]
     ;(println ep))

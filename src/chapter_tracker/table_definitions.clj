@@ -18,6 +18,7 @@
                         :serieses    [
                                       [:media_type :integer]
                                       [:name :text]
+                                      [:numbers_repeat_each_volume :integer]
                                      ]
                         :episodes    [
                                       [:series :integer]
