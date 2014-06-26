@@ -37,4 +37,5 @@
   ;(chapter-tracker.model/EpisodeRecord.)
   ;(println (-> (fetch-media-record 1) :program))
   ;(println (fetch-series-record 2))
+  ;(.show (chapter-tracker.view.tools/create-delete-dialog "thingie" "thingus" #(println "hi")))
 )

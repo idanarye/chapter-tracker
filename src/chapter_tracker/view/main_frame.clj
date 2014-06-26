@@ -4,7 +4,6 @@
          tools
          create-media-dialog
          create-series-dialog
-         delete-series-dialog
          series-and-episode-panel
          single-episode-panel
          series-directories-panel])
@@ -29,14 +28,16 @@
                                                          series-directories-panel-updating-function)
 
                       create-series-button  (action-button "Create Series" (.show (create-create-series-dialog update-serieses-list-function)))
+
                       rescan-button         (action-button "Rescan" (rescan-all) (update-episode-table-function))
+
                       delete-series-button  (action-button "Delete Series"
                                                            (when-let [series-to-delete (get-selected-series-function)]
-                                                             (.show (create-delete-series-dialog
-                                                                      series-to-delete #(do
-                                                                                         (delete-series-record series-to-delete)
-                                                                                         (update-serieses-list-function)
-                                                                                        )))))
+                                                             (.show (create-delete-dialog "series" (.toString series-to-delete)
+                                                                                          #(do
+                                                                                             (delete-series-record series-to-delete)
+                                                                                             (update-serieses-list-function)
+                                                                                           )))))
                       download-button       (action-button "Download"
                                                            (when-let [series-to-download (get-selected-series-function)]
                                                              (let [command-dir (:download-command-dir series-to-download)
