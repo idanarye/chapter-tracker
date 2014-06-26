@@ -266,3 +266,9 @@
     )
   )
 )
+
+(defmulti delete-episode-record number?)
+(defmethod delete-episode-record false [episode-record]
+  (delete-episode-record (:episode-id episode-record)))
+(defmethod delete-episode-record true [episode-id]
+  (wrap-connection (sql/delete-rows :episodes ["id=?" episode-id])))

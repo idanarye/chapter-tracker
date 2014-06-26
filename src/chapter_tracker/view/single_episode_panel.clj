@@ -18,6 +18,7 @@
         date-of-read-field  (JTextField. 5)
         episode-record-atom (atom nil)
         update-list-function-atom (atom nil)
+        refresh-list-function-atom (atom nil)
        ]
     [(create-panel {:width 500 :height 200} ;episode panel
 
@@ -64,6 +65,15 @@
                                                         )
                                          ) (gridx 2) (gridy 3) (fill GridBagConstraints/BOTH))
 
+                   (add-with-constraints (action-button "delete"
+                                                        (when-let [episode-to-delete @episode-record-atom]
+                                                          (.show (create-delete-dialog "episode" (:episode-name episode-to-delete)
+                                                                                       #(do
+                                                                                          (delete-episode-record episode-to-delete)
+                                                                                          (@refresh-list-function-atom)
+                                                                                        ))))
+                                         ) (gridx 5) (gridy 4) (fill GridBagConstraints/BOTH))
+
                    (doseq [[gui-field column-name db-field] [[volume-field          :volume-number    :volume      ]
                                                              [episode-field         :episode-number   :number      ]
                                                              [name-field            :episode-name     :name        ]
@@ -93,18 +103,23 @@
                      )
                    )
 
-     ) (fn [episode-record update-list-function] ;updating function
-         (reset! episode-record-atom nil)
-         (reset! update-list-function-atom update-list-function)
-         (doseq [[gui-field record-field] {volume-field          :volume-number
-                                           episode-field         :episode-number
-                                           name-field            :episode-name
-                                           file-field            :episode-file
-                                           date-of-read-field    :date-of-read
-                                          }]
-                 (.setText gui-field (-> episode-record (or {}) record-field (or "") .toString))
-         )
-         (reset! episode-record-atom episode-record)
-       )]
+     )
+     (fn [episode-record update-list-function] ;updating function
+       (reset! episode-record-atom nil)
+       (reset! update-list-function-atom update-list-function)
+       (doseq [[gui-field record-field] {volume-field          :volume-number
+                                         episode-field         :episode-number
+                                         name-field            :episode-name
+                                         file-field            :episode-file
+                                         date-of-read-field    :date-of-read
+                                        }]
+         (.setText gui-field (-> episode-record (or {}) record-field (or "") .toString))
+       )
+       (reset! episode-record-atom episode-record)
+     )
+     (fn [refresh-list-function]
+       (reset! refresh-list-function-atom refresh-list-function)
+     )
+    ]
   )
 )

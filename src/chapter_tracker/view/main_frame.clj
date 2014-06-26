@@ -17,7 +17,7 @@
 (defn create-main-frame[]
   (create-frame {:title "Chapter Tracker"}; :width 800 :height 600}
                 (let [create-media-button   (action-button "Create Media" (.show (create-create-media-dialog)))
-                      [single-episode-panel episode-panel-updating-function]     (create-episode-panel-and-updating-function)
+                      [single-episode-panel episode-panel-updating-function update-refresh-function]     (create-episode-panel-and-updating-function)
                       [series-directories-panel series-directories-panel-updating-function]     (create-series-directories-panel)
 
                       [series-and-episode-panel
@@ -47,6 +47,7 @@
                                                                    (future (.exec (Runtime/getRuntime) command))
                                                                    (future (.exec (Runtime/getRuntime)  command nil (file command-dir))))))))
                      ]
+                  (update-refresh-function update-episode-table-function)
                   (.setDefaultCloseOperation frame JFrame/DISPOSE_ON_CLOSE)
 
                   (add-with-constraints create-media-button
