@@ -54,14 +54,16 @@
   )
 )
 
-(defn create-series [media-type series-name episode-numbers-repeat-each-volume]
+(defn create-series [media-type series-name episode-numbers-repeat-each-volume download-command-dir download-command]
   (println "SAVING" (format "%s(%s)" series-name media-type))
   (println (:media-id media-type))
   (try
     (wrap-connection
       (sql/insert-records :serieses {:media_type (:media-id media-type)
                                      :name       series-name
-                                     :numbers_repeat_each_volume episode-numbers-repeat-each-volume})
+                                     :numbers_repeat_each_volume episode-numbers-repeat-each-volume
+                                     :download_command_dir download-command-dir
+                                     :download_command download-command})
     )
     true
     (catch Exception e
@@ -72,7 +74,7 @@
   )
 )
 
-(defrecord SeriesRecord [series-id media series-name episode-numbers-repeat-each-volume]
+(defrecord SeriesRecord [series-id media series-name episode-numbers-repeat-each-volume download-command-dir download-command]
   Object
   (toString [this] (format "%s(%s)" (:series-name this) (-> this :media :media-name)))
 )
@@ -85,6 +87,8 @@
                                              (fetch-media-record (:media_type row))
                                              (:name row)
                                              (:numbers_repeat_each_volume row)
+                                             (:download_command_dir row)
+                                             (:download_command row)
                               )
                             )
     )
@@ -99,6 +103,8 @@
                                                           (medias (:media_type %))
                                                           (:name %)
                                                           (:numbers_repeat_each_volume %)
+                                                          (:download_command_dir %)
+                                                          (:download_command %)
                                            ) rs))
       )
     )

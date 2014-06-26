@@ -8,6 +8,7 @@
          series-and-episode-panel
          single-episode-panel
          series-directories-panel])
+  (:use clojure.java.io)
 )
 (import
   '(java.awt GridBagConstraints)
@@ -36,6 +37,14 @@
                                                                                          (delete-series-record series-to-delete)
                                                                                          (update-serieses-list-function)
                                                                                         )))))
+                      download-button       (action-button "Download"
+                                                           (when-let [series-to-download (get-selected-series-function)]
+                                                             (let [command-dir (:download-command-dir series-to-download)
+                                                                   command     (:download-command series-to-download)]
+                                                               (when-not (empty? command)
+                                                                 (if (empty? command-dir)
+                                                                   (future (.exec (Runtime/getRuntime) command))
+                                                                   (future (.exec (Runtime/getRuntime)  command nil (file command-dir))))))))
                      ]
                   (.setDefaultCloseOperation frame JFrame/DISPOSE_ON_CLOSE)
 
@@ -51,8 +60,11 @@
                   (add-with-constraints rescan-button
                                         (gridx 3) (gridy 0))
 
+                  (add-with-constraints download-button
+                                        (gridx 4) (gridy 0))
+
                   (add-with-constraints series-and-episode-panel
-                                        (gridx 0) (gridy 1) (gridwidth 4) (gridheight 2) (fill GridBagConstraints/BOTH))
+                                        (gridx 0) (gridy 1) (gridwidth 5) (gridheight 2) (fill GridBagConstraints/BOTH))
 
                   (add-with-constraints (create-panel {:width 510 :height 450}
                                                       (add-with-constraints series-directories-panel
@@ -61,7 +73,7 @@
                                                       (add-with-constraints single-episode-panel
                                                                             (gridx 0) (gridy 0) (fill GridBagConstraints/HORIZONTAL))
                                         )
-                                        (gridx 4) (gridy 0) (gridheight 3) (fill GridBagConstraints/BOTH))
+                                        (gridx 5) (gridy 0) (gridheight 3) (fill GridBagConstraints/BOTH))
                 )
   )
 )
