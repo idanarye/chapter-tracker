@@ -11,6 +11,7 @@
 
 (defn create-series-and-episode-panel[update-episode-panel-function update-series-directories-panel-function]
   (let [serieses-list (JList.)
+        serieses-scroll-pane (JScrollPane. serieses-list)
         episodes-table (create-episodes-table update-episode-panel-function)
         episodes-scroll-pane (JScrollPane. episodes-table)
         update-serieses-list-function #(.setListData serieses-list (to-array (fetch-series-records)))
@@ -25,7 +26,7 @@
      (create-panel {:width 600 :height 400}
                    (update-serieses-list-function)
                    (.setFixedCellWidth serieses-list 180)
-                   (add-with-constraints serieses-list
+                   (add-with-constraints serieses-scroll-pane
                                          (gridx 0) (gridy 0) (fill GridBagConstraints/BOTH)
                    )
                    (.setPreferredSize episodes-scroll-pane (Dimension. 400 400))
