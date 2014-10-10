@@ -48,7 +48,7 @@
                                                               (when-not (= guess :not-belonging)
                                                                 (let [[guessed-volume guessed-episode] guess]
                                                                   {:series (:series-id series)
-                                                                   :volume guessed-volume
+                                                                   :volume (or guessed-volume (:volume directory-record))
                                                                    :number guessed-episode
                                                                    :file (.toString file)
                                                                    :name (str (:series-name series) (if guessed-volume (str " v" guessed-volume) "") " c" (or guessed-episode "???"))

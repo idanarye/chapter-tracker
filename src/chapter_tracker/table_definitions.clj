@@ -34,5 +34,6 @@
                                       [:series :integer]
                                       [:pattern :text]
                                       [:dir :text]
+                                      [:volume :integer]
                                      ]
                        })))

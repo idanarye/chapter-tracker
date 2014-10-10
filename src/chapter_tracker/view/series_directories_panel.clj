@@ -13,6 +13,7 @@
                               {:caption "Id"             :field :directory-id     :editable false}
                               {:caption "Directory"      :field :directory        :editable true}
                               {:caption "Pattern"        :field :pattern          :editable true}
+                              {:caption "Volume"         :field :volume           :editable true}
                              ])
 
 (def directory-table-captions (to-array (map :caption directory-table-columns)))

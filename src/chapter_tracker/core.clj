@@ -2,6 +2,7 @@
   (:use chapter-tracker.view)
   (:use chapter-tracker.model)
   (:use chapter-tracker.schema)
+  (:use chapter-tracker.file-matching)
 )
 
 (defn print-clj-trace [exception]
@@ -38,4 +39,15 @@
   ;(println (-> (fetch-media-record 1) :program))
   ;(println (fetch-series-record 2))
   ;(.show (chapter-tracker.view.tools/create-delete-dialog "thingie" "thingus" #(println "hi")))
+  ;(let [directory (chapter-tracker.model/fetch-directory-record 39)]
+    ;(println "39 " (:volume directory))
+    ;(println "39 " (:series directory))
+  ;)
+  ;(let [directory (chapter-tracker.model/fetch-directory-record 41)]
+    ;(println "41 " (:volume directory))
+  ;)
+  ;(chapter-tracker.model/DirectoryRecord. 1 2 "hello" "hi")
+  ;chapter-tracker.model/DirectoryRecord
+  ;(println (find-new-files-for-series 22))
+  ;(println (find-new-files-for-series 11))
 )
