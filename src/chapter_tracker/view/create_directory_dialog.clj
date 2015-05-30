@@ -5,14 +5,15 @@
 )
 (import
   '(java.awt GridBagLayout GridBagConstraints Dimension)
-  '(javax.swing JFrame JLabel JTextField)
+  '(javax.swing JFrame JLabel JTextField JCheckBox)
 )
 
 (defn create-create-directory-dialog[series-record on-close-function & [edit-directory-id]]
   (create-frame {:title (str (if edit-directory-id "Edit" "Create") " Directory For " (.toString series-record))}
-                (let [dir-field     (JTextField. 20)
-                      pattern-field (JTextField. (clojure.string/replace (:series-name series-record) #"\s" ".*"))
-                      volume-field  (JTextField. 5)
+                (let [dir-field         (JTextField. 20)
+                      pattern-field     (JTextField. (clojure.string/replace (:series-name series-record) #"\s" ".*"))
+                      volume-field      (JTextField. 5)
+                      recursive-field   (JCheckBox.)
                      ]
 
                   (when edit-directory-id
@@ -20,6 +21,7 @@
                       (.setText dir-field (:directory directory))
                       (.setText pattern-field (:pattern directory))
                       (.setText volume-field (str (:volume directory)))
+                      (.setSelected recursive-field (not= 0 (or (:recursive directory) 0)))
                     ))
 
                   (add-with-constraints (JLabel. "Directory") (gridx 0) (gridy 1))
@@ -39,6 +41,9 @@
                   (add-with-constraints (JLabel. "Default Volume:") (gridx 0) (gridy 2))
                   (add-with-constraints volume-field (gridx 1) (gridy 2) (gridwidth 1))
 
+                  (add-with-constraints (JLabel. "Recursive?") (gridx 2) (gridy 2))
+                  (add-with-constraints recursive-field (gridx 3) (gridy 2) (gridwidth 1))
+
                   (add-with-constraints (action-button "SAVE"
                                                        (if edit-directory-id
                                                          ;when saving existing directory:
@@ -46,12 +51,14 @@
                                                                                               :dir (.getText dir-field)
                                                                                               :pattern (.getText pattern-field)
                                                                                               :volume (.getText volume-field)
+                                                                                              :recursive (.isSelected recursive-field)
                                                                                              })
                                                          ;when creating new directory:
                                                          (create-directory series-record
                                                                            (.getText dir-field)
                                                                            (.getText pattern-field)
-                                                                           (.getText volume-field))
+                                                                           (.getText volume-field)
+                                                                           (.isSelected recursive-field))
                                                        )
                                                        (.dispose frame)
                                                        (on-close-function)

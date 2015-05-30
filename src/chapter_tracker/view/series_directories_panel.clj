@@ -14,6 +14,7 @@
                               {:caption "Directory"      :field :directory        :editable true}
                               {:caption "Pattern"        :field :pattern          :editable true}
                               {:caption "Volume"         :field :volume           :editable true}
+                              {:caption "Recursive"      :field :recursive        :editable true}
                              ])
 
 (def directory-table-captions (to-array (map :caption directory-table-columns)))

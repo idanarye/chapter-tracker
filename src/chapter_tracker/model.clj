@@ -146,16 +146,17 @@
                    ))
 )
 
-(defrecord DirectoryRecord [directory-id series directory pattern volume])
+(defrecord DirectoryRecord [directory-id series directory pattern volume recursive])
 
-(defn create-directory [series directory pattern volume]
+(defn create-directory [series directory pattern volume recursive]
   (println "SAVING" directory)
   (try
     (wrap-connection
       (sql/insert-records :directories {:series    (:series-id series)
                                         :dir       directory
                                         :pattern   pattern
-                                        :volume volume})
+                                        :volume    volume
+                                        :recursive recursive})
     )
     true
     (catch Exception e
@@ -177,6 +178,7 @@
                                                                           (:dir %)
                                                                           (:pattern %)
                                                                           (:volume %)
+                                                                          (not= 0 (or (:recursive %) 0))
                                                         ) rs))
                    ))
 )
@@ -189,6 +191,7 @@
                                          (:dir first-in-rs)
                                          (:pattern first-in-rs)
                                          (:volume first-in-rs)
+                                         (not= 0 (or (:recursive first-in-rs) 0))
                        ))))
 )
 

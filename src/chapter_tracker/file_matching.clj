@@ -6,6 +6,17 @@
   (:import java.io.File)
 )
 
+(defn list-files-ex [dir recursive?]
+  (if (.isDirectory dir)
+    (do
+      (let [files (-> dir .listFiles seq)]
+        (if recursive?
+          (mapcat #(list-files-ex % recursive?) files)
+          files)))
+    (list dir)
+  )
+)
+
 (defn guess-episode[pattern file-name]
   (let [regex (re-pattern pattern)
         matcher (re-matcher regex file-name)
@@ -40,7 +51,11 @@
                          ]
                       (if (.isDirectory dir)
                         (do;then
-                          (let [files (->> dir .listFiles (filter allowed?))
+                          (let [files (-> dir
+                                          (list-files-ex (:recursive directory-record))
+                                          (->> (filter allowed?))
+                                          (->> (filter #(.isFile %)))
+                                      )
                                 files-already-loaded (all-files-for (:series-id series))
                                ]
                             (sort-by :number (remove nil? (for [file (filter #(not (files-already-loaded (.toString %))) files)]

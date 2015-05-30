@@ -35,5 +35,6 @@
                                       [:pattern :text]
                                       [:dir :text]
                                       [:volume :integer]
+                                      [:recursive :integer]
                                      ]
                        })))

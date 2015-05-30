@@ -13,3 +13,8 @@ end
 task :uberjar do
 	sh 'lein uberjar'
 end
+
+task :"copy-prod-db" do
+	FileUtils.rm_f 'chapter_tracker.db3'
+	FileUtils.cp '/media/d/ChapterTracker/chapter_tracker.db3', 'chapter_tracker.db3'
+end
