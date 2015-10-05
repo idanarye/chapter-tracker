@@ -19,6 +19,7 @@
         episode-record-atom (atom nil)
         update-list-function-atom (atom nil)
         refresh-list-function-atom (atom nil)
+        update-serieses-list-function-atom (atom nil)
        ]
     [(create-panel {:width 500 :height 200} ;episode panel
 
@@ -62,6 +63,7 @@
                                                           (update-episode (:episode-id @episode-record-atom)
                                                                           {:date_of_read date-string})
                                                           (@update-list-function-atom :date-of-read date-string)
+                                                          (@update-serieses-list-function-atom)
                                                         )
                                          ) (gridx 2) (gridy 3) (fill GridBagConstraints/BOTH))
 
@@ -71,7 +73,8 @@
                                                                                        #(do
                                                                                           (delete-episode-record episode-to-delete)
                                                                                           (@refresh-list-function-atom)
-                                                                                        ))))
+                                                                                        )))
+                                                          (@update-serieses-list-function-atom))
                                          ) (gridx 5) (gridy 4) (fill GridBagConstraints/BOTH))
 
                    (doseq [[gui-field column-name db-field] [[volume-field          :volume-number    :volume      ]
@@ -89,6 +92,7 @@
                                                       (update-episode (:episode-id @episode-record-atom)
                                                                       {db-field new-value})
                                                       (@update-list-function-atom column-name new-value)
+                                                      (@update-serieses-list-function-atom)
                                                     )
                                                   )
                                                 )
@@ -117,7 +121,8 @@
        )
        (reset! episode-record-atom episode-record)
      )
-     (fn [refresh-list-function]
+     (fn [update-serieses-list-function refresh-list-function]
+       (reset! update-serieses-list-function-atom update-serieses-list-function)
        (reset! refresh-list-function-atom refresh-list-function)
      )
     ]

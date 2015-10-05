@@ -3,6 +3,7 @@
   (:use chapter-tracker.model)
   (:use chapter-tracker.schema)
   (:use chapter-tracker.file-matching)
+  (:use chapter-tracker.view.series-and-episode-panel)
   (:import java.io.File)
 )
 
@@ -26,9 +27,12 @@
 )
 
 (defn -test[]
-  (let [directory (chapter-tracker.model/fetch-directory-record 23)]
+  ;(let [directory (chapter-tracker.model/fetch-directory-record 23)]
     ;(println "39 " (:volume directory))
     ;(println "39 " (:series directory))
-    (println (:recursive directory))
-  )
+    ;(println (:recursive directory))
+  ;)
+  (println (fetch-set-of-serieses-with-unviewed-episodes))
+  (seq (for [record (take 2 (modify-series-records-based-on-unviewed-episodes (fetch-series-records)))]
+           (println record)))
 )

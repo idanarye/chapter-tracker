@@ -17,7 +17,7 @@
 (defn create-main-frame[]
   (create-frame {:title "Chapter Tracker"}; :width 800 :height 600}
                 (let [create-media-button   (action-button "Create Media" (.show (create-create-media-dialog)))
-                      [single-episode-panel episode-panel-updating-function update-refresh-function]     (create-episode-panel-and-updating-function)
+                      [single-episode-panel episode-panel-updating-function update-refresh-functions]     (create-episode-panel-and-updating-function)
                       [series-directories-panel series-directories-panel-updating-function]     (create-series-directories-panel)
 
                       [series-and-episode-panel
@@ -29,7 +29,7 @@
 
                       create-series-button  (action-button "Create Series" (.show (create-create-series-dialog update-serieses-list-function)))
 
-                      rescan-button         (action-button "Rescan" (rescan-all) (update-episode-table-function))
+                      rescan-button         (action-button "Rescan" (rescan-all) (update-serieses-list-function) (update-episode-table-function))
 
                       delete-series-button  (action-button "Delete Series"
                                                            (when-let [series-to-delete (get-selected-series-function)]
@@ -47,7 +47,7 @@
                                                                    (future (.exec (Runtime/getRuntime) command))
                                                                    (future (.exec (Runtime/getRuntime)  command nil (file command-dir))))))))
                      ]
-                  (update-refresh-function update-episode-table-function)
+                  (update-refresh-functions update-serieses-list-function update-episode-table-function)
                   (.setDefaultCloseOperation frame JFrame/DISPOSE_ON_CLOSE)
 
                   (add-with-constraints create-media-button

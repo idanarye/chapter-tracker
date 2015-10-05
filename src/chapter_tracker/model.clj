@@ -278,3 +278,12 @@
   (delete-episode-record (:episode-id episode-record)))
 (defmethod delete-episode-record true [episode-id]
   (wrap-connection (sql/delete-rows :episodes ["id=?" episode-id])))
+
+(defn fetch-set-of-serieses-with-unviewed-episodes []
+  (wrap-connection
+    (sql/with-query-results rs [
+                                "SELECT series FROM episodes
+                                WHERE COALESCE(date_of_read, '') = ''
+                                GROUP BY series"
+                               ]
+      (set (map :series rs)))))

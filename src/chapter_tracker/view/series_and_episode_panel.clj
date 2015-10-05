@@ -9,12 +9,28 @@
   '(javax.swing.event ListSelectionListener)
 )
 
+(defn modify-series-records-based-on-unviewed-episodes [series-records]
+  (let [serieses-with-unviewed-episodes (fetch-set-of-serieses-with-unviewed-episodes)]
+    (map (fn [record]
+           (if (serieses-with-unviewed-episodes (:series-id record))
+             (assoc record :series-name (str "* " (:series-name record)))
+             record)
+         ) series-records)))
+
 (defn create-series-and-episode-panel[update-episode-panel-function update-series-directories-panel-function]
   (let [serieses-list (JList.)
         serieses-scroll-pane (JScrollPane. serieses-list)
         episodes-table (create-episodes-table update-episode-panel-function)
         episodes-scroll-pane (JScrollPane. episodes-table)
-        update-serieses-list-function #(.setListData serieses-list (to-array (fetch-series-records)))
+        currently-refreshing-serieses-list (atom false)
+        update-serieses-list-function (fn []
+                                        (try
+                                          (reset! currently-refreshing-serieses-list true)
+                                          (let [previous-index (.getSelectedIndex serieses-list)]
+                                            (.setListData serieses-list (to-array (modify-series-records-based-on-unviewed-episodes (fetch-series-records))))
+                                            (if (<= 0 previous-index)
+                                              (.setSelectedIndex serieses-list previous-index)))
+                                          (finally (reset! currently-refreshing-serieses-list false))))
         get-selected-series-function #(.getSelectedValue serieses-list)
         update-episode-table-function #(do
                                          (let [series-record (.getSelectedValue serieses-list)]
@@ -37,7 +53,9 @@
                    )
                    (.addListSelectionListener serieses-list (proxy [ListSelectionListener] []
                                                               (valueChanged [e]
-                                                                (when-not (.getValueIsAdjusting e)
+                                                                (when-not (or
+                                                                            @currently-refreshing-serieses-list
+                                                                            (.getValueIsAdjusting e))
                                                                   (update-episode-table-function)
                                                                 )
                                                               )))
