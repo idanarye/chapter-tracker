@@ -1,0 +1,16 @@
+[package]
+name = "chapter-tracker"
+version = "0.1.0"
+authors = ["Idan Arye <IdanArye@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sqlx = { version = "0.3.5", default-features = false, features = [ "runtime-tokio", "macros", "sqlite" ] }
+tokio = { version = "0.2.22", features = ["full"] }
+anyhow = "1.0.32"
+log = "0.4.11"
+flexi_logger = "0.15.11"
+futures-util = "0.3.5"
+typed-builder = "0.7.0"
