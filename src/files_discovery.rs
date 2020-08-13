@@ -20,18 +20,22 @@ pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
     }).await?;
     for (path, directories) in directories {
         log::trace!("{} has {} patterns", path, directories.len());
-        discover_in_directory(pool, &path, &directories).await?;
+        let new_files = discover_in_path(pool, &path).await?;
+        if new_files.is_empty() {
+            continue;
+        }
+        log::info!("Found new files: {:#?}", new_files);
     }
     Ok(())
 }
 
-pub async fn discover_in_directory(pool: &SqlitePool, path: &str, _directories: &[models::Directory]) -> anyhow::Result<()> {
+pub async fn discover_in_path(pool: &SqlitePool, path: &str) -> anyhow::Result<Vec<String>> {
     let mut read_dir_result = match fs::read_dir(path).await {
         Ok(ok) => ok,
         Err(err) => {
             if matches!(err.kind(), std::io::ErrorKind::NotFound) {
                 log::debug!("{} does not exist - skipping", path);
-                return Ok(());
+                return Ok(Vec::new());
             } else {
                 return Err(err.into());
             }
@@ -45,14 +49,15 @@ pub async fn discover_in_directory(pool: &SqlitePool, path: &str, _directories: 
         // log::info!("Dir entry {}", file_path);
         sqlx::query("INSERT INTO discovered_files(filename) VALUES(?)").bind(file_path).execute(&mut tx).await?;
     }
-    let mut new_files_iter = sqlx::query_as::<_, (String,)>(r#"
+    let new_files: Vec<String> = sqlx::query_as::<_, (String,)>(r#"
         SELECT discovered_files.filename
         FROM discovered_files
             LEFT JOIN episodes ON discovered_files.filename = episodes.file
         WHERE episodes.file IS NULL
-        "#).fetch(&mut tx);
-    while let Some((new_file,)) = new_files_iter.try_next().await? {
-        log::info!("Checking {}", new_file);
-    }
-    Ok(())
+        "#)
+        .fetch(&mut tx)
+        .map_ok(|(filename,)| filename)
+        .try_collect().await?;
+    tx.rollback().await?;
+    Ok(new_files)
 }
