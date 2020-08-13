@@ -1,3 +1,3 @@
-mod manual_migrations;
-
-pub use manual_migrations::migrate_manually;
+mod models;
+pub mod manual_migrations;
+pub mod files_discovery;
