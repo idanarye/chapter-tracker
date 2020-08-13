@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use futures_util::stream::TryStreamExt;
+use tokio::fs;
+
 use sqlx::prelude::*;
 use sqlx::sqlite::SqlitePool;
 
@@ -17,7 +19,40 @@ pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
         futures::future::ready(Ok(()))
     }).await?;
     for (path, directories) in directories {
-        log::info!("{} has {} patterns", path, directories.len());
+        log::trace!("{} has {} patterns", path, directories.len());
+        discover_in_directory(pool, &path, &directories).await?;
+    }
+    Ok(())
+}
+
+pub async fn discover_in_directory(pool: &SqlitePool, path: &str, _directories: &[models::Directory]) -> anyhow::Result<()> {
+    let mut read_dir_result = match fs::read_dir(path).await {
+        Ok(ok) => ok,
+        Err(err) => {
+            if matches!(err.kind(), std::io::ErrorKind::NotFound) {
+                log::debug!("{} does not exist - skipping", path);
+                return Ok(());
+            } else {
+                return Err(err.into());
+            }
+
+        },
+    };
+    let mut tx = pool.begin().await?;
+    sqlx::query("CREATE TEMP TABLE discovered_files(filename text)").execute(&mut tx).await?;
+    while let Some(dir_entry) = read_dir_result.try_next().await? {
+        let file_path = dir_entry.path().to_string_lossy().to_string();
+        // log::info!("Dir entry {}", file_path);
+        sqlx::query("INSERT INTO discovered_files(filename) VALUES(?)").bind(file_path).execute(&mut tx).await?;
+    }
+    let mut new_files_iter = sqlx::query_as::<_, (String,)>(r#"
+        SELECT discovered_files.filename
+        FROM discovered_files
+            LEFT JOIN episodes ON discovered_files.filename = episodes.file
+        WHERE episodes.file IS NULL
+        "#).fetch(&mut tx);
+    while let Some((new_file,)) = new_files_iter.try_next().await? {
+        log::info!("Checking {}", new_file);
     }
     Ok(())
 }
