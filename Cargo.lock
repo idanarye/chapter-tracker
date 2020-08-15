@@ -110,6 +110,7 @@ dependencies = [
  "futures",
  "futures-util",
  "log",
+ "regex",
  "sqlx",
  "tokio",
  "typed-builder",
