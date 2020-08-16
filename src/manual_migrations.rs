@@ -1,25 +1,5 @@
-use std::collections::{HashSet, HashMap};
-
 use sqlx::sqlite::SqlitePool;
 use sqlx::prelude::*;
-
-#[derive(Debug, sqlx::FromRow)]
-struct TableColumnDef {
-    cid: i32,
-    name: String,
-    r#type: String,
-    notnull: bool,
-    dflt_value: Option<String>,
-    pk: bool,
-}
-
-#[derive(Debug)]
-struct TableDefManipulator<'a> {
-    table_name: &'static str,
-    pool: &'a SqlitePool,
-    columns: HashMap<String, TableColumnDef>,
-    touched_columns: HashSet<String>,
-}
 
 pub async fn migrate_manually(pool: &SqlitePool) -> anyhow::Result<()> {
     ensure_table(pool, "media_types", "name text unique, base_dir text, file_types text, program text").await?;
@@ -28,7 +8,6 @@ pub async fn migrate_manually(pool: &SqlitePool) -> anyhow::Result<()> {
     ensure_table(pool, "directories", "series integer, pattern text, dir text, volume integer, recursive integer").await?;
     sqlx::query("CREATE UNIQUE INDEX IF NOT EXISTS serieses_unique ON serieses(media_type, name)").execute(pool).await?;
     Ok(())
-
 }
 
 async fn ensure_table(pool: &SqlitePool, table_name: &'static str, table_columns: &'static str) -> anyhow::Result<()> {
