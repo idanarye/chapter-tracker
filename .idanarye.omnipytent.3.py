@@ -10,7 +10,7 @@ def compile(ctx):
 
 @task
 def run(ctx):
-    cargo['run', '-q'].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & BANG
+    cargo['run'].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & TERMINAL_PANEL
 
 
 @task
