@@ -8,7 +8,7 @@ pub fn start_gui() -> anyhow::Result<()> {
 
     let factories = Factories::new(FactoriesInner::read(&*crate::Asset::get("gui.glade").unwrap())?);
 
-    let main_app = factories.clone().app_main.create(|_, widgets| main_app::MainAppActor {
+    let main_app = factories.app_main.build().actor(|_, widgets| main_app::MainAppActor {
         widgets,
         factories,
     })?;
@@ -23,8 +23,8 @@ pub fn start_gui() -> anyhow::Result<()> {
 #[derive(woab::Factories)]
 pub struct FactoriesInner {
     #[factory(extra(lsm_media_types))]
-    pub app_main: woab::ActorFactory<main_app::MainAppActor>,
-    pub row_series: woab::ActorFactory<series::SeriesActor>,
+    pub app_main: woab::Factory<main_app::MainAppActor, main_app::MainAppWidgets, main_app::MainAppSignal>,
+    pub row_series: woab::Factory<series::SeriesActor, series::SeriesWidgets, series::SeriesSignal>,
 }
 
 type Factories = std::rc::Rc<FactoriesInner>;

@@ -7,11 +7,6 @@ pub struct SeriesActor {
     pub series: models::Series,
 }
 
-impl woab::WoabActor for SeriesActor {
-    type Widgets = SeriesWidgets;
-    type Signal = SeriesSignal;
-}
-
 impl actix::Actor for SeriesActor {
     type Context = actix::Context<Self>;
 

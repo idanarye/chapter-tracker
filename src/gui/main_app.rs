@@ -12,11 +12,6 @@ pub struct MainAppActor {
     pub factories: gui::Factories,
 }
 
-impl woab::WoabActor for MainAppActor {
-    type Widgets = MainAppWidgets;
-    type Signal = MainAppSignal;
-}
-
 impl actix::Actor for MainAppActor {
     type Context = actix::Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
@@ -72,7 +67,7 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
         Box::new(
             rx.into_actor(self)
             .map(|series, actor, _ctx| {
-                actor.factories.row_series.create(|_, widgets| {
+                actor.factories.row_series.build().actor(|_, widgets| {
                     widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
                     actor.widgets.lst_serieses.add(&widgets.row_series);
                     SeriesActor {
