@@ -2290,6 +2290,8 @@ dependencies = [
 [[package]]
 name = "woab"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24236bbed3130edcbf2a2d7f288c1b0bdce80cce9f5496435ad8139c953ac018"
 dependencies = [
  "actix",
  "glib",
@@ -2303,6 +2305,8 @@ dependencies = [
 [[package]]
 name = "woab-macros"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5a3f4c971c74c9c3d051373a262e9a51a1242aa7622a7cc9b8a46ec99afd5e6"
 dependencies = [
  "proc-macro2",
  "quote",
