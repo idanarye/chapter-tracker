@@ -1,11 +1,9 @@
 use gtk::prelude::*;
 use actix::prelude::*;
 
-use tokio::sync::mpsc;
-
-use crate::actors::DbActor;
 use crate::gui;
 use gui::series::SeriesActor;
+use crate::util::db::{query_stream, FromRowWithExtra};
 
 pub struct MainAppActor {
     pub widgets: MainAppWidgets,
@@ -42,10 +40,9 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
     type Result = ResponseActFuture<Self, anyhow::Result<()>>;
 
     fn handle(&mut self, _: gui::msgs::UpdateMediaTypesList, _ctx: &mut Self::Context) -> Self::Result {
-        let (tx, rx) = mpsc::channel(8);
-        DbActor::from_registry().do_send(crate::msgs::GetMediaTypes(tx));
         Box::new(
-            rx.into_actor(self)
+            query_stream::<crate::models::MediaType>("SELECT * FROM media_types")
+            .into_actor(self)
             .map(|media_type, actor, _ctx| {
                 let lsm = &actor.widgets.lsm_media_types;
                 let it = lsm.append();
@@ -62,17 +59,31 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
     type Result = ResponseActFuture<Self, anyhow::Result<()>>;
 
     fn handle(&mut self, _: gui::msgs::UpdateSeriesesList, _ctx: &mut Self::Context) -> Self::Result {
-        let (tx, rx) = mpsc::channel(128);
-        DbActor::from_registry().do_send(crate::msgs::GetSerieses(tx));
+        #[derive(sqlx::FromRow)]
+        struct Extra {
+            num_episodes: i32,
+            num_unread: i32,
+        }
+
         Box::new(
-            rx.into_actor(self)
-            .map(|series, actor, _ctx| {
+            query_stream::<FromRowWithExtra<_, Extra>>(r#"
+                SELECT serieses.*
+                    , SUM(date_of_read IS NULL) AS num_unread
+                    , COUNT(*) AS num_episodes
+                FROM serieses
+                INNER JOIN episodes ON serieses.id = episodes.series
+                GROUP BY serieses.id
+            "#)
+            .into_actor(self)
+            .map(|data, actor, _ctx| {
                 actor.factories.row_series.build().actor(|_, widgets| {
                     widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
                     actor.widgets.lst_serieses.add(&widgets.row_series);
                     SeriesActor {
                         widgets,
-                        series,
+                        series: data.data,
+                        num_episodes: data.extra.num_episodes,
+                        num_unread: data.extra.num_unread,
                     }
                 }).unwrap();
             })

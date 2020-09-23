@@ -5,8 +5,6 @@ use actix::prelude::*;
 use sqlx::sqlite::SqlitePool;
 use sqlx::prelude::*;
 
-use crate::models;
-
 #[derive(typed_builder::TypedBuilder)]
 pub struct DbActor {
     pool: std::rc::Rc<SqlitePool>,
@@ -48,31 +46,24 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
     }
 }
 
-impl Handler<crate::msgs::GetMediaTypes> for DbActor {
+impl<T> Handler<crate::msgs::QueryStream<T>> for DbActor
+where
+    T: Unpin,
+    T: Send,
+    T: 'static,
+    for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow<'c>>
+{
     type Result = anyhow::Result<()>;
 
-    fn handle(&mut self, msg: crate::msgs::GetMediaTypes, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: crate::msgs::QueryStream<T>, ctx: &mut Self::Context) -> Self::Result {
         let pool = self.pool.clone();
-        let mut tx = msg.0;
+        let crate::msgs::QueryStream {
+            query,
+            mut tx,
+        } = msg;
         ctx.spawn(async move {
-            sqlx::query_as::<_, models::MediaType>("SELECT * FROM media_types").fetch(&*pool).try_for_each(|media_type| {
-                tx.try_send(media_type).unwrap();
-                futures::future::ready(Ok(()))
-            }).await.unwrap();
-        }.into_actor(self));
-        Ok(())
-    }
-}
-
-impl Handler<crate::msgs::GetSerieses> for DbActor {
-    type Result = anyhow::Result<()>;
-
-    fn handle(&mut self, msg: crate::msgs::GetSerieses, ctx: &mut Self::Context) -> Self::Result {
-        let pool = self.pool.clone();
-        let mut tx = msg.0;
-        ctx.spawn(async move {
-            sqlx::query_as::<_, models::Series>("SELECT * FROM serieses").fetch(&*pool).try_for_each(|series| {
-                tx.try_send(series).unwrap();
+            sqlx::query_as::<_, T>(query).fetch(&*pool).try_for_each(|item| {
+                tx.try_send(item).map_err(|_| "Unable to send").unwrap();
                 futures::future::ready(Ok(()))
             }).await.unwrap();
         }.into_actor(self));

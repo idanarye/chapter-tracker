@@ -1,5 +1,6 @@
 mod models;
 mod gui;
+mod util;
 pub mod manual_migrations;
 pub mod files_discovery;
 pub mod actors;
