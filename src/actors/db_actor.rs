@@ -1,9 +1,8 @@
-use futures_util::stream::TryStreamExt;
+use futures::stream::TryStreamExt;
 
 use actix::prelude::*;
 
 use sqlx::sqlite::SqlitePool;
-use sqlx::prelude::*;
 
 #[derive(typed_builder::TypedBuilder)]
 pub struct DbActor {
@@ -24,7 +23,7 @@ impl Default for DbActor {
     fn default() -> Self {
         let pool = std::thread::spawn(|| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
-                let pool = SqlitePool::builder().build("sqlite:chapter_tracker.db3").await?;
+                let pool = SqlitePool::connect("sqlite:chapter_tracker.db3").await?;
                 crate::manual_migrations::migrate_manually(&pool).await?;
                 Ok::<_, anyhow::Error>(pool)
             }).unwrap()
@@ -39,7 +38,7 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
     type Result = ResponseActFuture<Self, anyhow::Result<()>>;
     fn handle(&mut self, _msg: crate::msgs::DiscoverFiles, _ctx: &mut Self::Context) -> Self::Result {
         let pool = self.pool.clone();
-        Box::new(async move {
+        Box::pin(async move {
             crate::files_discovery::run_files_discovery(&pool).await?;
             Ok(())
         }.into_actor(self))
@@ -51,7 +50,7 @@ where
     T: Unpin,
     T: Send,
     T: 'static,
-    for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow<'c>>
+    for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow>
 {
     type Result = anyhow::Result<()>;
 
@@ -59,7 +58,7 @@ where
         let pool = self.pool.clone();
         let crate::msgs::QueryStream {
             query,
-            mut tx,
+            tx,
         } = msg;
         ctx.spawn(async move {
             sqlx::query_as::<_, T>(query).fetch(&*pool).try_for_each(|item| {

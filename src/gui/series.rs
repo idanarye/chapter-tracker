@@ -27,11 +27,12 @@ pub struct SeriesWidgets {
     pub tgl_unread: gtk::ToggleButton,
 }
 
-#[derive(woab::BuilderSignal)]
-pub enum SeriesSignal {
-}
+impl actix::Handler<woab::Signal> for SeriesActor {
+    type Result = woab::SignalResult;
 
-impl actix::StreamHandler<SeriesSignal> for SeriesActor {
-    fn handle(&mut self, _signal: SeriesSignal, _ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            _ => msg.cant_handle()?,
+        })
     }
 }

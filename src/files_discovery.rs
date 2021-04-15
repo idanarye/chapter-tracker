@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 
-use futures_util::stream::TryStreamExt;
+use futures::stream::TryStreamExt;
 use tokio::fs;
+use tokio_stream::wrappers::ReadDirStream;
 
-use sqlx::prelude::*;
 use sqlx::sqlite::SqlitePool;
 
 use crate::models;
 
 pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
     let mut directories = HashMap::<String, Vec<models::Directory>>::new();
-    // sqlx::query_as::<_, models::Directory>("SELECT * FROM directories").fetch(pool).try_for_each(|directory| {
     sqlx::query_as::<_, models::Directory>("SELECT id, series, replace(pattern, '(?<', '(?P<') AS pattern, dir, volume, recursive FROM directories").fetch(pool).try_for_each(|directory| {
         if let Some(entry) = directories.get_mut(&directory.dir) {
             entry.push(directory);
@@ -97,7 +96,7 @@ pub fn process_file_match(filename: &str, pattern: &regex::Regex) -> anyhow::Res
 
 pub async fn discover_in_path(pool: &SqlitePool, path: &str) -> anyhow::Result<Vec<String>> {
     let mut read_dir_result = match fs::read_dir(path).await {
-        Ok(ok) => ok,
+        Ok(ok) => ReadDirStream::new(ok),
         Err(err) => {
             if matches!(err.kind(), std::io::ErrorKind::NotFound) {
                 log::debug!("{} does not exist - skipping", path);

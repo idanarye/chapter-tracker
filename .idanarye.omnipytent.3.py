@@ -4,8 +4,12 @@ from omnipytent.ext.idan import *
 
 
 @task
-def compile(ctx):
+def build(ctx):
     cargo['build', '-q'] & ERUN.bang
+
+@task
+def check(ctx):
+    cargo['check', '-q'] & ERUN.bang
 
 
 @task

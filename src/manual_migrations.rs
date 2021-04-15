@@ -1,5 +1,4 @@
 use sqlx::sqlite::SqlitePool;
-use sqlx::prelude::*;
 
 pub async fn migrate_manually(pool: &SqlitePool) -> anyhow::Result<()> {
     ensure_table(pool, "media_types", "name text unique, base_dir text, file_types text, program text").await?;

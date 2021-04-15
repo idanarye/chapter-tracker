@@ -2,7 +2,7 @@ use gtk::prelude::*;
 use actix::prelude::*;
 
 use crate::gui;
-use gui::series::SeriesActor;
+use gui::series::{SeriesActor, SeriesWidgets};
 use crate::util::db::{query_stream, FromRowWithExtra};
 
 pub struct MainAppActor {
@@ -25,14 +25,13 @@ pub struct MainAppWidgets {
 
 }
 
-#[derive(woab::BuilderSignal)]
-pub enum MainAppSignal {
-}
+impl actix::Handler<woab::Signal> for MainAppActor {
+    type Result = woab::SignalResult;
 
-impl actix::StreamHandler<MainAppSignal> for MainAppActor {
-    fn handle(&mut self, signal: MainAppSignal, _ctx: &mut Self::Context) {
-        match signal {
-        }
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            _ => msg.cant_handle()?,
+        })
     }
 }
 
@@ -40,7 +39,7 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
     type Result = ResponseActFuture<Self, anyhow::Result<()>>;
 
     fn handle(&mut self, _: gui::msgs::UpdateMediaTypesList, _ctx: &mut Self::Context) -> Self::Result {
-        Box::new(
+        Box::pin(
             query_stream::<crate::models::MediaType>("SELECT * FROM media_types")
             .into_actor(self)
             .map(|media_type, actor, _ctx| {
@@ -65,8 +64,8 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
             num_unread: i32,
         }
 
-        Box::new(
-            query_stream::<FromRowWithExtra<_, Extra>>(r#"
+        Box::pin(
+            query_stream::<FromRowWithExtra<crate::models::Series, Extra>>(r#"
                 SELECT serieses.*
                     , SUM(date_of_read IS NULL) AS num_unread
                     , COUNT(*) AS num_episodes
@@ -76,7 +75,8 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
             "#)
             .into_actor(self)
             .map(|data, actor, _ctx| {
-                actor.factories.row_series.build().actor(|_, widgets| {
+                actor.factories.row_series.instantiate().connect_with(|bld| {
+                    let widgets: SeriesWidgets = bld.widgets().unwrap();
                     widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
                     actor.widgets.lst_serieses.add(&widgets.row_series);
                     SeriesActor {
@@ -84,8 +84,8 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                         series: data.data,
                         num_episodes: data.extra.num_episodes,
                         num_unread: data.extra.num_unread,
-                    }
-                }).unwrap();
+                    }.start()
+                });
             })
             .finish()
             .map(|_, _, _| Ok(()))
