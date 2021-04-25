@@ -26,3 +26,14 @@ pub struct Directory {
     pub volume: Option<i32>,
     pub recursive: bool,
 }
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct Episode {
+    pub id: i64,
+    pub series: i64,
+    pub number: i64,
+    pub name: String,
+    pub file: String,
+    pub volume: Option<i64>,
+    pub date_of_read: Option<sqlx::types::chrono::NaiveDateTime>,
+}
