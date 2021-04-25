@@ -30,6 +30,10 @@ impl actix::Handler<woab::Signal> for MainAppActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "close" => {
+                gtk::main_quit();
+                None
+            }
             _ => msg.cant_handle()?,
         })
     }
