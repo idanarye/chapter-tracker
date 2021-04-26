@@ -31,6 +31,7 @@ pub struct FactoriesInner {
     #[factory(extra(lsm_media_types))]
     pub app_main: woab::BuilderFactory,
     pub row_series: woab::BuilderFactory,
+    pub row_episode: woab::BuilderFactory,
 }
 
 type Factories = std::rc::Rc<FactoriesInner>;

@@ -36,4 +36,5 @@ pub struct Episode {
     pub file: String,
     pub volume: Option<i64>,
     pub date_of_read: Option<sqlx::types::chrono::NaiveDateTime>,
+    // pub date_of_read: Option<String>,
 }

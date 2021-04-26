@@ -1,4 +1,4 @@
-use futures::stream::TryStreamExt;
+use std::rc::Rc;
 
 use actix::prelude::*;
 
@@ -6,7 +6,7 @@ use sqlx::sqlite::SqlitePool;
 
 #[derive(typed_builder::TypedBuilder)]
 pub struct DbActor {
-    pool: std::rc::Rc<SqlitePool>,
+    pool: Rc<SqlitePool>,
 }
 
 impl Actor for DbActor {
@@ -29,7 +29,7 @@ impl Default for DbActor {
             }).unwrap()
         }).join().unwrap();
         Self {
-            pool: std::rc::Rc::new(pool)
+            pool: Rc::new(pool)
         }
     }
 }
@@ -45,27 +45,11 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
     }
 }
 
-impl<T> Handler<crate::msgs::QueryStream<T>> for DbActor
-where
-    T: Unpin,
-    T: Send,
-    T: 'static,
-    for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow>
-{
+impl Handler<crate::msgs::RunWithPool> for DbActor {
     type Result = anyhow::Result<()>;
 
-    fn handle(&mut self, msg: crate::msgs::QueryStream<T>, ctx: &mut Self::Context) -> Self::Result {
-        let pool = self.pool.clone();
-        let crate::msgs::QueryStream {
-            query,
-            tx,
-        } = msg;
-        ctx.spawn(async move {
-            sqlx::query_as::<_, T>(query).fetch(&*pool).try_for_each(|item| {
-                tx.try_send(item).map_err(|_| "Unable to send").unwrap();
-                futures::future::ready(Ok(()))
-            }).await.unwrap();
-        }.into_actor(self));
+    fn handle(&mut self, msg: crate::msgs::RunWithPool, ctx: &mut Self::Context) -> Self::Result {
+        (msg.dlg)(self.pool.clone(), self, ctx);
         Ok(())
     }
 }

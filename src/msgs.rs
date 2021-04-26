@@ -1,3 +1,4 @@
+use std::rc::Rc;
 // #[derive(actix::Message)]
 // #[rtype(result="anyhow::Result<sqlx::pool::PoolConnection<sqlx::sqlite::SqliteConnection>>")]
 // pub struct GetConnection;
@@ -10,7 +11,10 @@ pub struct DiscoverFiles;
 
 #[derive(actix::Message)]
 #[rtype(result="anyhow::Result<()>")]
-pub struct QueryStream<T> {
-    pub query: &'static str,
-    pub tx: tokio::sync::mpsc::Sender<T>,
+pub struct RunWithPool {
+    pub dlg: Box<dyn FnOnce(
+        Rc<sqlx::sqlite::SqlitePool>,
+        &mut crate::actors::DbActor,
+        &mut actix::Context<crate::actors::DbActor>
+    ) + Send + 'static>,
 }

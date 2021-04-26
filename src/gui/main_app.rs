@@ -3,7 +3,7 @@ use actix::prelude::*;
 
 use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets};
-use crate::util::db::{query_stream, FromRowWithExtra};
+use crate::util::db::{stream_query, FromRowWithExtra};
 
 pub struct MainAppActor {
     pub widgets: MainAppWidgets,
@@ -44,7 +44,7 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
 
     fn handle(&mut self, _: gui::msgs::UpdateMediaTypesList, _ctx: &mut Self::Context) -> Self::Result {
         Box::pin(
-            query_stream::<crate::models::MediaType>("SELECT * FROM media_types")
+            stream_query::<crate::models::MediaType>("SELECT * FROM media_types")
             .into_actor(self)
             .map(|media_type, actor, _ctx| {
                 let lsm = &actor.widgets.lsm_media_types;
@@ -69,7 +69,7 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
         }
 
         Box::pin(
-            query_stream::<FromRowWithExtra<crate::models::Series, Extra>>(r#"
+            stream_query::<FromRowWithExtra<crate::models::Series, Extra>>(r#"
                 SELECT serieses.*
                     , SUM(date_of_read IS NULL) AS num_unread
                     , COUNT(*) AS num_episodes
@@ -83,12 +83,14 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                     let widgets: SeriesWidgets = bld.widgets().unwrap();
                     widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
                     actor.widgets.lst_serieses.add(&widgets.row_series);
-                    SeriesActor {
-                        widgets,
-                        series: data.data,
-                        num_episodes: data.extra.num_episodes,
-                        num_unread: data.extra.num_unread,
-                    }.start()
+                    SeriesActor::builder()
+                        .widgets(widgets)
+                        .factories(actor.factories.clone())
+                        .series(data.data)
+                        .num_episodes(data.extra.num_episodes)
+                        .num_unread(data.extra.num_unread)
+                        .build()
+                        .start()
                 });
             })
             .finish()
