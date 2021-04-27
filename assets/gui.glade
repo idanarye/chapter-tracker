@@ -39,6 +39,7 @@
                 <property name="width-request">200</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="margin-end">10</property>
                 <child>
                   <object class="GtkListBox" id="lst_serieses">
                     <property name="visible">True</property>
