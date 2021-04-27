@@ -224,6 +224,7 @@ dependencies = [
  "futures",
  "glib",
  "gtk",
+ "hashbrown 0.11.2",
  "log",
  "regex",
  "rust-embed",

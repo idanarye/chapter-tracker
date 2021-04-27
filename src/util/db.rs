@@ -44,7 +44,6 @@ where
     run_with_pool(move |pool| async move {
         query.fetch(&*pool).for_each(|item| {
             tx.try_send(item).map_err(|_| "Unable to send").unwrap();
-            // futures::future::ready(Ok(()))
             futures::future::ready(())
         }).await;
     });

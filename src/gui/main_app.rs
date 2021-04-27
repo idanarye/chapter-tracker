@@ -77,6 +77,7 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                 FROM serieses
                 INNER JOIN episodes ON serieses.id = episodes.series
                 GROUP BY serieses.id
+                ORDER BY serieses.id
             "#))
             .into_actor(self)
             .map(|data, actor, _ctx| {
