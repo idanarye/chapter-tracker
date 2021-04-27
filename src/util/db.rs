@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use futures::stream::TryStreamExt;
+use futures::stream::StreamExt;
 use tokio_stream::wrappers::ReceiverStream;
 use sqlx::prelude::*;
 
@@ -31,28 +31,9 @@ where
     });
 }
 
-
-pub fn stream_query<T>(query: &'static str) -> ReceiverStream<T>
-where
-    T: Unpin,
-    T: Send,
-    T: 'static,
-    for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow>,
-{
-    let (tx, rx) = tokio::sync::mpsc::channel(128);
-    run_with_pool(move |pool| async move {
-        sqlx::query_as::<_, T>(query).fetch(&*pool).try_for_each(|item| {
-            tx.try_send(item).map_err(|_| "Unable to send").unwrap();
-            futures::future::ready(Ok(()))
-        }).await.unwrap();
-    });
-    ReceiverStream::new(rx)
-}
-
 type SqliteQueryAs<'q, O> = sqlx::query::QueryAs<'q, sqlx::sqlite::Sqlite, O, <sqlx::sqlite::Sqlite as sqlx::database::HasArguments<'q>>::Arguments>;
 
-
-pub fn stream_query_2<T>(query: SqliteQueryAs<'static, T>) -> ReceiverStream<T>
+pub fn stream_query<T>(query: SqliteQueryAs<'static, T>) -> ReceiverStream<sqlx::Result<T>>
 where
     T: Unpin,
     T: Send,
@@ -61,10 +42,11 @@ where
 {
     let (tx, rx) = tokio::sync::mpsc::channel(128);
     run_with_pool(move |pool| async move {
-        query.fetch(&*pool).try_for_each(|item| {
+        query.fetch(&*pool).for_each(|item| {
             tx.try_send(item).map_err(|_| "Unable to send").unwrap();
-            futures::future::ready(Ok(()))
-        }).await.unwrap();
+            // futures::future::ready(Ok(()))
+            futures::future::ready(())
+        }).await;
     });
     ReceiverStream::new(rx)
 }

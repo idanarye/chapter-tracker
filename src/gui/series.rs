@@ -26,9 +26,9 @@ impl actix::Actor for SeriesActor {
 #[derive(woab::WidgetsFromBuilder)]
 pub struct SeriesWidgets {
     pub row_series: gtk::ListBoxRow,
-    pub txt_series_name: gtk::Entry,
+    txt_series_name: gtk::Entry,
     pub cbo_media_type: gtk::ComboBox,
-    pub tgl_unread: gtk::ToggleButton,
+    tgl_unread: gtk::ToggleButton,
     rvl_episodes: gtk::Revealer,
     lst_episodes: gtk::ListBox,
 }
@@ -40,11 +40,12 @@ impl actix::Handler<woab::Signal> for SeriesActor {
         Ok(match msg.name() {
             "toggle_episodes" => {
                 let toggle_button: gtk::ToggleButton = msg.param(0)?;
-                let is_activated = toggle_button.get_active();
-                if is_activated {
+                if toggle_button.get_active() {
                     self.update_episodes(ctx);
+                    self.widgets.rvl_episodes.set_reveal_child(true);
+                } else {
+                    self.widgets.rvl_episodes.set_reveal_child(false);
                 }
-                self.widgets.rvl_episodes.set_reveal_child(is_activated);
                 None
             }
             _ => msg.cant_handle()?,
@@ -55,12 +56,19 @@ impl actix::Handler<woab::Signal> for SeriesActor {
 impl SeriesActor {
     fn update_episodes(&mut self, ctx: &mut actix::Context<Self>) {
         ctx.spawn(
-            db::stream_query_2(sqlx::query_as("SELECT * FROM episodes WHERE series = ?").bind(self.series.id))
+            db::stream_query(sqlx::query_as("SELECT * FROM episodes WHERE series = ?").bind(self.series.id))
             .into_actor(self)
-            .map(|data: models::Episode, actor, _ctx| {
+            .map(|episode, actor, _ctx| {
+                let episode: models::Episode = match episode {
+                    Ok(ok) => ok,
+                    Err(err) => {
+                        log::error!("Problem with episode: {}", err);
+                        return;
+                    }
+                };
                 let widgets: EpisodeWidgets = actor.factories.row_episode.instantiate().widgets().unwrap();
-                widgets.txt_name.set_text(&data.name);
-                widgets.txt_file.set_text(&data.file);
+                widgets.txt_name.set_text(&episode.name);
+                widgets.txt_file.set_text(&episode.file);
                 actor.widgets.lst_episodes.add(&widgets.row_episode);
             })
             .finish()

@@ -44,9 +44,10 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
 
     fn handle(&mut self, _: gui::msgs::UpdateMediaTypesList, _ctx: &mut Self::Context) -> Self::Result {
         Box::pin(
-            stream_query::<crate::models::MediaType>("SELECT * FROM media_types")
+            stream_query::<crate::models::MediaType>(sqlx::query_as("SELECT * FROM media_types"))
             .into_actor(self)
             .map(|media_type, actor, _ctx| {
+                let media_type = media_type.unwrap();
                 let lsm = &actor.widgets.lsm_media_types;
                 let it = lsm.append();
                 lsm.set_value(&it, 0, &media_type.id.to_string().to_value());
@@ -69,16 +70,17 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
         }
 
         Box::pin(
-            stream_query::<FromRowWithExtra<crate::models::Series, Extra>>(r#"
+            stream_query::<FromRowWithExtra<crate::models::Series, Extra>>(sqlx::query_as(r#"
                 SELECT serieses.*
                     , SUM(date_of_read IS NULL) AS num_unread
                     , COUNT(*) AS num_episodes
                 FROM serieses
                 INNER JOIN episodes ON serieses.id = episodes.series
                 GROUP BY serieses.id
-            "#)
+            "#))
             .into_actor(self)
             .map(|data, actor, _ctx| {
+                let data = data.unwrap();
                 actor.factories.row_series.instantiate().connect_with(|bld| {
                     let widgets: SeriesWidgets = bld.widgets().unwrap();
                     widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
