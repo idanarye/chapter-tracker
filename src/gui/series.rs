@@ -15,6 +15,23 @@ pub struct SeriesActor {
     num_unread: i32,
     #[builder(setter(skip), default)]
     episodes: HashMap<i64, EpisodeRow>,
+    #[builder(setter(skip), default = crate::util::TypedQuark::new("sort_and_filter_data"))]
+    sort_and_filter_data: crate::util::TypedQuark<SortAndFilterData>,
+}
+
+struct SortAndFilterData {
+    number: i64,
+    #[allow(unused)]
+    volume: Option<i64>,
+}
+
+impl core::convert::From<&models::Episode> for SortAndFilterData {
+    fn from(episode: &models::Episode) -> Self {
+        Self {
+            number: episode.number,
+            volume: episode.volume,
+        }
+    }
 }
 
 impl actix::Actor for SeriesActor {
@@ -24,15 +41,7 @@ impl actix::Actor for SeriesActor {
         self.widgets.txt_series_name.set_text(&self.series.name);
         self.widgets.cbo_media_type.set_active_id(Some(&self.series.media_type.to_string()));
         self.widgets.tgl_unread.set_label(&format!("{}/{}", self.num_unread, self.num_episodes));
-        self.widgets.lst_episodes.set_sort_func(Some(Box::new(|this, that| {
-            let this_ordinal = unsafe { this.get_data::<usize>("ordinal") }.unwrap();
-            let that_ordinal = unsafe { that.get_data::<usize>("ordinal") }.unwrap();
-            match this_ordinal.cmp(&that_ordinal) {
-                std::cmp::Ordering::Less => -1,
-                std::cmp::Ordering::Equal => 0,
-                std::cmp::Ordering::Greater => 1,
-            }
-        })));
+        self.set_order_func()
     }
 }
 
@@ -83,11 +92,13 @@ impl SeriesActor {
                     hashbrown::hash_map::Entry::Occupied(mut entry) => {
                         let entry = entry.get_mut();
                         entry.data = data;
+                        actor.sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.data).into());
                         entry.update_widgets_from_data();
+                        entry.widgets.row_episode.changed();
                     }
                     hashbrown::hash_map::Entry::Vacant(entry) => {
                         let widgets: EpisodeWidgets = actor.factories.row_episode.instantiate().widgets().unwrap();
-                        unsafe { widgets.row_episode.set_data::<usize>("ordinal", usize::MAX); }
+                        actor.sort_and_filter_data.set(&widgets.row_episode, (&data).into());
                         let entry = entry.insert(EpisodeRow { data, widgets });
                         entry.update_widgets_from_data();
                         actor.widgets.lst_episodes.add(&entry.widgets.row_episode);
@@ -95,10 +106,6 @@ impl SeriesActor {
                 }
             })
             .finish()
-            .then(|_, actor, _ctx| {
-                actor.order_episodes();
-                futures::future::ready(())
-            })
         );
     }
 }
@@ -123,21 +130,19 @@ struct EpisodeWidgets {
 }
 
 impl SeriesActor {
-    fn order_episodes(&self) {
-        let mut episodes = self.episodes.values().collect::<Vec<_>>();
-
+    fn set_order_func(&self) {
         if self.series.numbers_repeat_each_volume.unwrap_or(false) {
-            episodes.sort_by_key(|episode| {
-                std::cmp::Reverse((episode.data.volume, episode.data.number))
-            });
+            self.widgets.lst_episodes.set_sort_func(self.sort_and_filter_data.gen_sort_func(|this, that| {
+                let volume_order = this.volume.cmp(&that.volume);
+                if volume_order != core::cmp::Ordering::Equal {
+                    return volume_order.reverse();
+                }
+                this.number.cmp(&that.number).reverse()
+            }));
         } else {
-            episodes.sort_by_key(|episode| {
-                std::cmp::Reverse(episode.data.number)
-            });
+            self.widgets.lst_episodes.set_sort_func(self.sort_and_filter_data.gen_sort_func(|this, that| {
+                this.number.cmp(&that.number).reverse()
+            }));
         }
-        for (ordinal, episode) in episodes.into_iter().enumerate() {
-            unsafe { episode.widgets.row_episode.set_data::<usize>("ordinal", ordinal); }
-        }
-        self.widgets.lst_episodes.invalidate_sort();
     }
 }
