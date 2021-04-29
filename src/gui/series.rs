@@ -16,17 +16,32 @@ pub struct SeriesActor {
     num_unread: i32,
     #[builder(setter(skip), default)]
     episodes: HashMap<i64, EpisodeRow>,
-    #[builder(setter(skip), default = TypedQuark::new("sort_and_filter_data"))]
-    sort_and_filter_data: TypedQuark<SortAndFilterData>,
+    #[allow(dead_code)]
+    series_sort_and_filter_data: TypedQuark<SeriesSortAndFilterData>,
+    #[builder(setter(skip), default = TypedQuark::new("episode_sort_and_filter_data"))]
+    episode_sort_and_filter_data: TypedQuark<EpisodeSortAndFilterData>,
 }
 
-struct SortAndFilterData {
+pub struct SeriesSortAndFilterData {
+    pub name: String,
+    pub num_unread: i32,
+}
+
+impl core::convert::From<(i32, i32, &models::Series)> for SeriesSortAndFilterData {
+    fn from((_num_episodes, num_unread, series): (i32, i32, &models::Series)) -> Self {
+        Self {
+            name: series.name.clone(),
+            num_unread,
+        }
+    }
+}
+
+struct EpisodeSortAndFilterData {
     number: i64,
-    #[allow(unused)]
     volume: Option<i64>,
 }
 
-impl core::convert::From<&models::Episode> for SortAndFilterData {
+impl core::convert::From<&models::Episode> for EpisodeSortAndFilterData {
     fn from(episode: &models::Episode) -> Self {
         Self {
             number: episode.number,
@@ -134,14 +149,14 @@ impl SeriesActor {
                         let entry = entry.get_mut();
                         if entry.data != data {
                             entry.data = data;
-                            actor.sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.data).into());
+                            actor.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.data).into());
                             entry.update_widgets_from_data();
                             entry.widgets.row_episode.changed();
                         }
                     }
                     hashbrown::hash_map::Entry::Vacant(entry) => {
                         let widgets: EpisodeWidgets = actor.factories.row_episode.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
-                        actor.sort_and_filter_data.set(&widgets.row_episode, (&data).into());
+                        actor.episode_sort_and_filter_data.set(&widgets.row_episode, (&data).into());
                         let entry = entry.insert(EpisodeRow { data, widgets });
                         entry.update_widgets_from_data();
                         actor.widgets.lst_episodes.add(&entry.widgets.row_episode);
@@ -184,7 +199,7 @@ struct EpisodeWidgets {
 impl SeriesActor {
     fn set_order_func(&self) {
         if self.series.numbers_repeat_each_volume.unwrap_or(false) {
-            self.widgets.lst_episodes.set_sort_func(self.sort_and_filter_data.gen_sort_func(|this, that| {
+            self.widgets.lst_episodes.set_sort_func(self.episode_sort_and_filter_data.gen_sort_func(|this, that| {
                 let volume_order = this.volume.cmp(&that.volume);
                 if volume_order != core::cmp::Ordering::Equal {
                     return volume_order.reverse();
@@ -192,7 +207,7 @@ impl SeriesActor {
                 this.number.cmp(&that.number).reverse()
             }));
         } else {
-            self.widgets.lst_episodes.set_sort_func(self.sort_and_filter_data.gen_sort_func(|this, that| {
+            self.widgets.lst_episodes.set_sort_func(self.episode_sort_and_filter_data.gen_sort_func(|this, that| {
                 this.number.cmp(&that.number).reverse()
             }));
         }

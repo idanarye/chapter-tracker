@@ -36,9 +36,7 @@ impl<T: 'static> TypedQuark<T> {
         }
     }
 
-    pub fn gen_sort_func<W: glib::ObjectExt>(&self, cmp: impl Fn(&T, &T) -> core::cmp::Ordering + 'static) -> Option<Box<
-        dyn Fn(&W, &W) -> i32 + 'static
-    >>{
+    pub fn gen_sort_func<W: glib::ObjectExt>(&self, cmp: impl Fn(&T, &T) -> core::cmp::Ordering + 'static) -> Option<Box<dyn Fn(&W, &W) -> i32 + 'static>> {
         let typed_quark = self.clone();
         Some(Box::new(move |this, that| {
             let this = typed_quark.get(this).unwrap();
@@ -48,6 +46,13 @@ impl<T: 'static> TypedQuark<T> {
                 std::cmp::Ordering::Equal => 0,
                 std::cmp::Ordering::Greater => 1,
             }
+        }))
+    }
+
+    pub fn gen_filter_func<W: glib::ObjectExt>(&self, pred: impl Fn(&T) -> bool + 'static) -> Option<Box<dyn Fn(&W) -> bool + 'static>> {
+        let typed_quark = self.clone();
+        Some(Box::new(move |widget| {
+            pred(typed_quark.get(widget).unwrap())
         }))
     }
 }

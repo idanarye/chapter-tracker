@@ -2,12 +2,16 @@ use gtk::prelude::*;
 use actix::prelude::*;
 
 use crate::gui;
-use gui::series::{SeriesActor, SeriesWidgets};
+use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
 use crate::util::db::{stream_query, FromRowWithExtra};
+use crate::util::TypedQuark;
 
+#[derive(typed_builder::TypedBuilder)]
 pub struct MainAppActor {
     pub widgets: MainAppWidgets,
     pub factories: gui::Factories,
+    #[builder(setter(skip), default = TypedQuark::new("series_sort_and_filter_data"))]
+    series_sort_and_filter_data: TypedQuark<SeriesSortAndFilterData>,
 }
 
 impl actix::Actor for MainAppActor {
@@ -27,6 +31,8 @@ pub struct MainAppWidgets {
     app_main: gtk::ApplicationWindow,
     lst_serieses: gtk::ListBox,
     lsm_media_types: gtk::ListStore,
+    chk_series_unread: gtk::CheckButton,
+    txt_series_filter: gtk::Entry,
 
 }
 
@@ -35,12 +41,33 @@ impl actix::Handler<woab::Signal> for MainAppActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "series_unread_toggled" => {
+                self.update_series_filter();
+                None
+            }
+            "series_filter_changed" => {
+                self.update_series_filter();
+                None
+            }
             "close" => {
                 gtk::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
         })
+    }
+}
+
+impl MainAppActor {
+    fn update_series_filter(&self) {
+        let unread_only = self.widgets.chk_series_unread.get_active();
+        let name_filter = self.widgets.txt_series_filter.get_text().as_str().to_lowercase();
+        self.widgets.lst_serieses.set_filter_func(self.series_sort_and_filter_data.gen_filter_func(move |series| {
+            if unread_only && series.num_unread == 0 {
+                return false;
+            }
+            series.name.to_lowercase().contains(&name_filter)
+        }));
     }
 }
 
@@ -90,6 +117,7 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                 actor.factories.row_series.instantiate().connect_with(|bld| {
                     let widgets: SeriesWidgets = bld.widgets().unwrap();
                     widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
+                    actor.series_sort_and_filter_data.set(&widgets.row_series, (data.extra.num_episodes, data.extra.num_unread, &data.data).into());
                     actor.widgets.lst_serieses.add(&widgets.row_series);
                     SeriesActor::builder()
                         .widgets(widgets)
@@ -97,6 +125,7 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                         .series(data.data)
                         .num_episodes(data.extra.num_episodes)
                         .num_unread(data.extra.num_unread)
+                        .series_sort_and_filter_data(actor.series_sort_and_filter_data)
                         .build()
                         .start()
                 });

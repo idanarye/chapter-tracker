@@ -12,10 +12,11 @@ pub fn start_gui() -> anyhow::Result<()> {
 
     woab::block_on(async {
         factories.app_main.instantiate().connect_with(|bld| {
-            let main_app = main_app::MainAppActor {
-                widgets: bld.widgets().unwrap(),
-                factories,
-            }.start();
+            let main_app = main_app::MainAppActor::builder()
+                .widgets(bld.widgets().unwrap())
+                .factories(factories)
+                .build()
+                .start();
             main_app.do_send(msgs::UpdateMediaTypesList);
             main_app.do_send(msgs::UpdateSeriesesList);
             main_app
