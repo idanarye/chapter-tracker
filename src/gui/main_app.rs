@@ -33,13 +33,14 @@ pub struct MainAppWidgets {
     lsm_media_types: gtk::ListStore,
     chk_series_unread: gtk::CheckButton,
     txt_series_filter: gtk::Entry,
+    spn_scan_files: gtk::Spinner,
 
 }
 
 impl actix::Handler<woab::Signal> for MainAppActor {
     type Result = woab::SignalResult;
 
-    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "series_unread_toggled" => {
                 self.update_series_filter();
@@ -47,6 +48,21 @@ impl actix::Handler<woab::Signal> for MainAppActor {
             }
             "series_filter_changed" => {
                 self.update_series_filter();
+                None
+            }
+            "scan_files" => {
+                let button: gtk::Button = msg.param(0)?;
+                self.widgets.spn_scan_files.start();
+                button.set_sensitive(false);
+                ctx.spawn(async {
+                    let new_files = crate::actors::DbActor::from_registry().send(crate::msgs::DiscoverFiles).await.unwrap().unwrap();
+                    log::info!("Found {} new files", new_files.len());
+                }.into_actor(self)
+                .then(move |_, actor, _| {
+                    button.set_sensitive(true);
+                    actor.widgets.spn_scan_files.stop();
+                    futures::future::ready(())
+                }));
                 None
             }
             "close" => {

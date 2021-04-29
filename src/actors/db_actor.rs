@@ -35,12 +35,12 @@ impl Default for DbActor {
 }
 
 impl Handler<crate::msgs::DiscoverFiles> for DbActor {
-    type Result = ResponseActFuture<Self, anyhow::Result<()>>;
+    type Result = ResponseActFuture<Self, anyhow::Result<Vec<crate::files_discovery::FoundFile>>>;
+
     fn handle(&mut self, _msg: crate::msgs::DiscoverFiles, _ctx: &mut Self::Context) -> Self::Result {
         let pool = self.pool.clone();
         Box::pin(async move {
-            crate::files_discovery::run_files_discovery(&pool).await?;
-            Ok(())
+            Ok(crate::files_discovery::run_files_discovery(&pool).await?)
         }.into_actor(self))
     }
 }

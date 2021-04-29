@@ -6,7 +6,7 @@ use std::rc::Rc;
 // use crate::models;
 
 #[derive(actix::Message)]
-#[rtype(result="anyhow::Result<()>")]
+#[rtype(result="anyhow::Result<Vec<crate::files_discovery::FoundFile>>")]
 pub struct DiscoverFiles;
 
 #[derive(actix::Message)]

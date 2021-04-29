@@ -8,7 +8,14 @@ use sqlx::sqlite::SqlitePool;
 
 use crate::models;
 
-pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
+pub struct FoundFile {
+    pub series: i64,
+    pub directory: i64,
+    pub path: String,
+    pub file_data: FileData,
+}
+
+pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<Vec<FoundFile>> {
     let mut directories = HashMap::<String, Vec<models::Directory>>::new();
     sqlx::query_as::<_, models::Directory>("SELECT id, series, replace(pattern, '(?<', '(?P<') AS pattern, dir, volume, recursive FROM directories").fetch(pool).try_for_each(|directory| {
         if let Some(entry) = directories.get_mut(&directory.dir) {
@@ -18,6 +25,7 @@ pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
         }
         futures::future::ready(Ok(()))
     }).await?;
+    let mut result = Vec::new();
     for (path, directories) in directories {
         if path.matches("BitTorrent").next().is_none() {
             continue;
@@ -35,7 +43,6 @@ pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
         for new_file in new_files {
             if let Some(index) = regex_set.matches(&new_file).iter().next() {
                 let directory = &directories[index];
-                log::info!("{} belongs to {:?}", new_file, directory);
                 let directory_regex = match regex_cache.get(&index) {
                     Some(r) => r,
                     None => {
@@ -44,11 +51,18 @@ pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<()> {
                     },
                 };
                 let decision = process_file_match(&new_file, &directory_regex)?.map(|d| d.with_default_volume(directory.volume));
-                println!("Decision: {:?}", decision);
+                if let Some(file_data) = decision {
+                    result.push(FoundFile {
+                        series: directory.series,
+                        directory: directory.id,
+                        path: new_file.to_owned(),
+                        file_data,
+                    });
+                }
             }
         }
     }
-    Ok(())
+    Ok(result)
 }
 
 #[derive(Debug)]
@@ -111,7 +125,6 @@ pub async fn discover_in_path(pool: &SqlitePool, path: &str) -> anyhow::Result<V
     sqlx::query("CREATE TEMP TABLE discovered_files(filename text)").execute(&mut tx).await?;
     while let Some(dir_entry) = read_dir_result.try_next().await? {
         let file_path = dir_entry.path().to_string_lossy().to_string();
-        // log::info!("Dir entry {}", file_path);
         sqlx::query("INSERT INTO discovered_files(filename) VALUES(?)").bind(file_path).execute(&mut tx).await?;
     }
     let new_files: Vec<String> = sqlx::query_as::<_, (String,)>(r#"
