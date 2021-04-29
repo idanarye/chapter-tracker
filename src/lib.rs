@@ -10,3 +10,12 @@ pub use gui::start_gui;
 #[derive(rust_embed::RustEmbed)]
 #[folder = "assets"]
 struct Asset;
+
+impl Asset {
+    pub fn css_provider(filename: &str) -> gtk::CssProvider {
+        use gtk::prelude::*;
+        let css_provider = gtk::CssProvider::new();
+        css_provider.load_from_data(Self::get(filename).unwrap().as_ref()).unwrap();
+        css_provider
+    }
+}

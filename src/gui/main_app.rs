@@ -13,6 +13,11 @@ pub struct MainAppActor {
 impl actix::Actor for MainAppActor {
     type Context = actix::Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
+        let css_provider = crate::Asset::css_provider("default.css");
+        gtk::StyleContext::add_provider_for_screen(
+            &self.widgets.app_main.get_screen().unwrap(),
+            &css_provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
         self.widgets.app_main.show();
     }
 }

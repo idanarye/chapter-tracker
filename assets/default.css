@@ -1,0 +1,13 @@
+.title {
+    font-size: 36pt;
+}
+
+.episode-is-not-read {
+    background-image: none;
+    background-color: lightblue;
+}
+
+.episode-is-read {
+    background-image: none;
+    background-color: lightgreen;
+}

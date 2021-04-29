@@ -1,4 +1,4 @@
-#[derive(Debug, sqlx::FromRow)]
+#[derive(PartialEq, Debug, sqlx::FromRow)]
 pub struct MediaType {
     pub id: i64,
     pub name: String,
@@ -7,7 +7,7 @@ pub struct MediaType {
     pub program: String,
 }
 
-#[derive(Debug, sqlx::FromRow)]
+#[derive(PartialEq, Debug, sqlx::FromRow)]
 pub struct Series {
     pub id: i64,
     pub media_type: i64,
@@ -17,7 +17,7 @@ pub struct Series {
     pub download_command: Option<String>,
 }
 
-#[derive(Debug, sqlx::FromRow)]
+#[derive(PartialEq, Debug, sqlx::FromRow)]
 pub struct Directory {
     pub id: i64,
     pub series: i64,
@@ -27,7 +27,7 @@ pub struct Directory {
     pub recursive: bool,
 }
 
-#[derive(Debug, sqlx::FromRow)]
+#[derive(PartialEq, Debug, sqlx::FromRow)]
 pub struct Episode {
     pub id: i64,
     pub series: i64,

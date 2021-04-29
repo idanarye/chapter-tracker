@@ -12,6 +12,9 @@ impl<T: 'static> Clone for TypedQuark<T> {
     }
 }
 
+impl<T: 'static> Copy for TypedQuark<T> {
+}
+
 impl<T: 'static> TypedQuark<T> {
     pub fn new(name: &str) -> Self {
         let name = format!("{}-{}", name, core::any::type_name::<T>());

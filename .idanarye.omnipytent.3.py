@@ -25,3 +25,8 @@ def test(ctx):
 @task
 def go(ctx, example=cargo_example):
     cargo['run', '-q', '--example', example].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & BANG
+
+
+@task
+def add_migration(ctx, name):
+    local['sqlx']['migrate', 'add', name].with_env(DATABASE_URL='sqlite:chapter_tracker.db3')()
