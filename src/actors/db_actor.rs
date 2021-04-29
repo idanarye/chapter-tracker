@@ -24,7 +24,7 @@ impl Default for DbActor {
         let pool = std::thread::spawn(|| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
                 let pool = SqlitePool::connect("sqlite:chapter_tracker.db3").await?;
-                crate::manual_migrations::migrate_manually(&pool).await?;
+                sqlx::migrate!("./migrations").run(&pool).await?;
                 Ok::<_, anyhow::Error>(pool)
             }).unwrap()
         }).join().unwrap();
