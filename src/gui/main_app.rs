@@ -60,13 +60,15 @@ impl actix::Handler<woab::Signal> for MainAppActor {
 
 impl MainAppActor {
     fn update_series_filter(&self) {
+        use fuzzy_matcher::FuzzyMatcher;
+        let fuzzy_matcher = fuzzy_matcher::skim::SkimMatcherV2::default();
         let unread_only = self.widgets.chk_series_unread.get_active();
-        let name_filter = self.widgets.txt_series_filter.get_text().as_str().to_lowercase();
+        let name_filter = self.widgets.txt_series_filter.get_text().as_str().to_owned();
         self.widgets.lst_serieses.set_filter_func(self.series_sort_and_filter_data.gen_filter_func(move |series| {
             if unread_only && series.num_unread == 0 {
                 return false;
             }
-            series.name.to_lowercase().contains(&name_filter)
+            fuzzy_matcher.fuzzy_match(&series.name, &name_filter).is_some()
         }));
     }
 }
