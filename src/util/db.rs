@@ -18,17 +18,22 @@ impl<'c, R: Row, D: sqlx::FromRow<'c, R>, E: sqlx::FromRow<'c, R>> sqlx::FromRow
     }
 }
 
-pub fn run_with_pool<F>(dlg: impl FnOnce(Rc<sqlx::sqlite::SqlitePool>) -> F + Send + 'static)
+pub async fn run_with_pool<F>(dlg: impl FnOnce(Rc<sqlx::sqlite::SqlitePool>) -> F + Send + 'static) -> F::Output
 where
-    F: core::future::Future<Output = ()>,
+    F: core::future::Future,
     F: 'static,
+    F::Output: Send,
 {
     use actix::prelude::*;
-    crate::actors::DbActor::from_registry().do_send(crate::msgs::RunWithPool {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    crate::actors::DbActor::from_registry().send(crate::msgs::RunWithPool {
         dlg: Box::new(move |pool, db_actor, ctx| {
-            ctx.spawn(dlg(pool).into_actor(db_actor));
+            ctx.spawn(async {
+                tx.send(dlg(pool).await).map_err(|_| "Problem sending").unwrap();
+            }.into_actor(db_actor));
         }),
-    });
+    }).await.unwrap().unwrap();
+    rx.await.unwrap()
 }
 
 type SqliteQueryAs<'q, O> = sqlx::query::QueryAs<'q, sqlx::sqlite::Sqlite, O, <sqlx::sqlite::Sqlite as sqlx::database::HasArguments<'q>>::Arguments>;
@@ -41,11 +46,11 @@ where
     for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow>,
 {
     let (tx, rx) = tokio::sync::mpsc::channel(128);
-    run_with_pool(move |pool| async move {
+    actix::spawn(run_with_pool(move |pool| async move {
         query.fetch(&*pool).for_each(|item| {
             tx.try_send(item).map_err(|_| "Unable to send").unwrap();
             futures::future::ready(())
         }).await;
-    });
+    }));
     ReceiverStream::new(rx)
 }

@@ -1,9 +1,10 @@
 use gtk::prelude::*;
 use actix::prelude::*;
+use sqlx::prelude::*;
 
 use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
-use crate::util::db::{stream_query, FromRowWithExtra};
+use crate::util::db::{stream_query, FromRowWithExtra, run_with_pool};
 use crate::util::TypedQuark;
 
 #[derive(typed_builder::TypedBuilder)]
@@ -56,11 +57,15 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 button.set_sensitive(false);
                 ctx.spawn(async {
                     let new_files = crate::actors::DbActor::from_registry().send(crate::msgs::DiscoverFiles).await.unwrap().unwrap();
-                    log::info!("Found {} new files", new_files.len());
+                    run_with_pool(move |pool| async move {
+                        Self::register_files(pool, new_files).await
+                    }).await
                 }.into_actor(self)
-                .then(move |_, actor, _| {
+                .then(move |result, actor, _| {
                     button.set_sensitive(true);
                     actor.widgets.spn_scan_files.stop();
+                    result.unwrap();
+                    // TODO: referesh the lists
                     futures::future::ready(())
                 }));
                 None
@@ -86,6 +91,34 @@ impl MainAppActor {
             }
             fuzzy_matcher.fuzzy_match(&series.name, &name_filter).is_some()
         }));
+    }
+
+    async fn register_files(pool: std::rc::Rc<sqlx::sqlite::SqlitePool>, new_files: Vec<crate::files_discovery::FoundFile>) -> anyhow::Result<()> {
+        use futures::stream::StreamExt;
+        let mut series_map = hashbrown::HashMap::<i64, String>::new();
+        sqlx::query_as::<_, (i64, String)>("SELECT id, name FROM serieses").fetch(&*pool).for_each(|row| {
+            let (id, name) = row.unwrap();
+            series_map.insert(id, name);
+            futures::future::ready(())
+        }).await;
+        let statement = pool.prepare(r#"
+            INSERT INTO episodes(series, volume, number, name, file, date_of_read)
+            VALUES(?, ?, ?, ?, ?, NULL);
+            "#).await?;
+        for file in new_files {
+            statement.query()
+                .bind(file.series)
+                .bind(file.file_data.volume)
+                .bind(file.file_data.chapter)
+                .bind(if let Some(volume) = file.file_data.volume {
+                    format!("{} v{:?} c{}", series_map[&file.series], volume, file.file_data.chapter)
+                } else {
+                    format!("{} c{}", series_map[&file.series], file.file_data.chapter)
+                })
+                .bind(file.path)
+                .execute(&*pool).await?;
+        }
+        Ok(())
     }
 }
 

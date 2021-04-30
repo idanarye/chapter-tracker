@@ -67,8 +67,8 @@ pub async fn run_files_discovery(pool: &SqlitePool) -> anyhow::Result<Vec<FoundF
 
 #[derive(Debug)]
 pub struct FileData {
-    volume: Option<i32>,
-    chapter: i32,
+    pub volume: Option<i32>,
+    pub chapter: i32,
 }
 
 impl FileData {
