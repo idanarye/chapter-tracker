@@ -91,7 +91,7 @@ impl MainAppActor {
         }));
     }
 
-    async fn register_files(mut con: sqlx::pool::PoolConnection<sqlx::Sqlite>, new_files: Vec<crate::files_discovery::FoundFile>) -> anyhow::Result<()> {
+    async fn register_files(mut con: crate::SqlitePoolConnection, new_files: Vec<crate::files_discovery::FoundFile>) -> anyhow::Result<()> {
         use futures::stream::StreamExt;
         let mut series_map = hashbrown::HashMap::<i64, String>::new();
         sqlx::query_as::<_, (i64, String)>("SELECT id, name FROM serieses").fetch(&mut con).for_each(|row| {

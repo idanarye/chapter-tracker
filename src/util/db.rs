@@ -38,6 +38,6 @@ where
     ReceiverStream::new(rx)
 }
 
-pub async fn request_connection() -> sqlx::Result<sqlx::pool::PoolConnection<sqlx::Sqlite>> {
+pub async fn request_connection() -> sqlx::Result<crate::SqlitePoolConnection> {
     crate::actors::DbActor::from_registry().send(crate::msgs::RequestConnection).await.unwrap()
 }

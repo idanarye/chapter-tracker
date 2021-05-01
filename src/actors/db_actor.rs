@@ -1,12 +1,11 @@
-use std::rc::Rc;
-
 use actix::prelude::*;
+use futures::prelude::*;
 
 use sqlx::sqlite::SqlitePool;
 
 #[derive(typed_builder::TypedBuilder)]
 pub struct DbActor {
-    pool: Rc<SqlitePool>,
+    pool: SqlitePool,
 }
 
 impl Actor for DbActor {
@@ -29,7 +28,7 @@ impl Default for DbActor {
             }).unwrap()
         }).join().unwrap();
         Self {
-            pool: Rc::new(pool)
+            pool,
         }
     }
 }
@@ -38,15 +37,14 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
     type Result = ResponseActFuture<Self, anyhow::Result<Vec<crate::files_discovery::FoundFile>>>;
 
     fn handle(&mut self, _msg: crate::msgs::DiscoverFiles, _ctx: &mut Self::Context) -> Self::Result {
-        let pool = self.pool.clone();
-        Box::pin(async move {
-            Ok(crate::files_discovery::run_files_discovery(&pool).await?)
-        }.into_actor(self))
+        Box::pin(self.pool.acquire().then(|con| async move {
+            Ok(crate::files_discovery::run_files_discovery(con?).await?)
+        }).into_actor(self))
     }
 }
 
 impl Handler<crate::msgs::RequestConnection> for DbActor {
-    type Result = actix::ResponseFuture<sqlx::Result<sqlx::pool::PoolConnection<sqlx::Sqlite>>>;
+    type Result = actix::ResponseFuture<sqlx::Result<crate::SqlitePoolConnection>>;
     // type Result = Result<Rc<sqlx::sqlite::SqlitePool>, ()>;
 
     fn handle(&mut self, _msg: crate::msgs::RequestConnection, _ctx: &mut Self::Context) -> Self::Result {

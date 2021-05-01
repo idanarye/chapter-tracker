@@ -19,3 +19,5 @@ impl Asset {
         css_provider
     }
 }
+
+type SqlitePoolConnection = sqlx::pool::PoolConnection<sqlx::Sqlite>;

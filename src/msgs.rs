@@ -5,5 +5,5 @@ pub struct DiscoverFiles;
 pub struct RequestConnection;
 
 impl actix::Message for RequestConnection {
-    type Result = sqlx::Result<sqlx::pool::PoolConnection<sqlx::Sqlite>>;
+    type Result = sqlx::Result<crate::SqlitePoolConnection>;
 }
