@@ -32,6 +32,6 @@ def add_migration(ctx, name):
     local['sqlx']['migrate', 'add', name].with_env(DATABASE_URL='sqlite:chapter_tracker.db3')()
 
 
-@task
+@task(alias='init')
 def reset_db(ctx):
     local['cp']['chapter_tracker.db3.old']['chapter_tracker.db3'] & BANG

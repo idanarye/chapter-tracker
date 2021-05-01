@@ -99,9 +99,11 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
         Ok(match msg.name() {
             "mark_read" => {
                 ctx.spawn(
-                    db::stream_query::<(i32,)>(sqlx::query_as("UPDATE episodes SET date_of_read = datetime() WHERE id == ?").bind(episode_id))
-                    .into_actor(self)
-                    .finish()
+                    async move {
+                        let mut con = db::request_connection().await.unwrap();
+                        let query = sqlx::query("UPDATE episodes SET date_of_read = datetime() WHERE id == ?").bind(episode_id);
+                        query.execute(&mut con).await.unwrap();
+                    }.into_actor(self)
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
                         futures::future::ready(())
@@ -111,9 +113,11 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
             }
             "mark_unread" => {
                 ctx.spawn(
-                    db::stream_query::<(i32,)>(sqlx::query_as("UPDATE episodes SET date_of_read = NULL WHERE id == ?").bind(episode_id))
-                    .into_actor(self)
-                    .finish()
+                    async move {
+                        let mut con = db::request_connection().await.unwrap();
+                        let query = sqlx::query("UPDATE episodes SET date_of_read = NULL WHERE id == ?").bind(episode_id);
+                        query.execute(&mut con).await.unwrap();
+                    }.into_actor(self)
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
                         futures::future::ready(())

@@ -4,7 +4,7 @@ use sqlx::prelude::*;
 
 use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
-use crate::util::db::{stream_query, FromRowWithExtra, run_with_pool};
+use crate::util::db::{stream_query, FromRowWithExtra};
 use crate::util::TypedQuark;
 
 #[derive(typed_builder::TypedBuilder)]
@@ -57,9 +57,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 button.set_sensitive(false);
                 ctx.spawn(async {
                     let new_files = crate::actors::DbActor::from_registry().send(crate::msgs::DiscoverFiles).await.unwrap().unwrap();
-                    run_with_pool(move |pool| async move {
-                        Self::register_files(pool, new_files).await
-                    }).await
+                    Self::register_files(crate::util::db::request_connection().await.unwrap(), new_files).await
                 }.into_actor(self)
                 .then(move |result, actor, _| {
                     button.set_sensitive(true);
@@ -93,15 +91,15 @@ impl MainAppActor {
         }));
     }
 
-    async fn register_files(pool: std::rc::Rc<sqlx::sqlite::SqlitePool>, new_files: Vec<crate::files_discovery::FoundFile>) -> anyhow::Result<()> {
+    async fn register_files(mut con: sqlx::pool::PoolConnection<sqlx::Sqlite>, new_files: Vec<crate::files_discovery::FoundFile>) -> anyhow::Result<()> {
         use futures::stream::StreamExt;
         let mut series_map = hashbrown::HashMap::<i64, String>::new();
-        sqlx::query_as::<_, (i64, String)>("SELECT id, name FROM serieses").fetch(&*pool).for_each(|row| {
+        sqlx::query_as::<_, (i64, String)>("SELECT id, name FROM serieses").fetch(&mut con).for_each(|row| {
             let (id, name) = row.unwrap();
             series_map.insert(id, name);
             futures::future::ready(())
         }).await;
-        let statement = pool.prepare(r#"
+        let statement = con.prepare(r#"
             INSERT INTO episodes(series, volume, number, name, file, date_of_read)
             VALUES(?, ?, ?, ?, ?, NULL);
             "#).await?;
@@ -116,7 +114,7 @@ impl MainAppActor {
                     format!("{} c{}", series_map[&file.series], file.file_data.chapter)
                 })
                 .bind(file.path)
-                .execute(&*pool).await?;
+                .execute(&mut con).await?;
         }
         Ok(())
     }

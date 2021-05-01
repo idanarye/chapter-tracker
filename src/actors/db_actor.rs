@@ -45,11 +45,11 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
     }
 }
 
-impl Handler<crate::msgs::RunWithPool> for DbActor {
-    type Result = anyhow::Result<()>;
+impl Handler<crate::msgs::RequestConnection> for DbActor {
+    type Result = actix::ResponseFuture<sqlx::Result<sqlx::pool::PoolConnection<sqlx::Sqlite>>>;
+    // type Result = Result<Rc<sqlx::sqlite::SqlitePool>, ()>;
 
-    fn handle(&mut self, msg: crate::msgs::RunWithPool, ctx: &mut Self::Context) -> Self::Result {
-        (msg.dlg)(self.pool.clone(), self, ctx);
-        Ok(())
+    fn handle(&mut self, _msg: crate::msgs::RequestConnection, _ctx: &mut Self::Context) -> Self::Result {
+        Box::pin(self.pool.acquire())
     }
 }
