@@ -2,6 +2,8 @@ use gtk::prelude::*;
 use actix::prelude::*;
 use sqlx::prelude::*;
 
+use hashbrown::HashMap;
+
 use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
 use crate::util::db::{stream_query, FromRowWithExtra};
@@ -11,19 +13,26 @@ use crate::util::TypedQuark;
 pub struct MainAppActor {
     pub widgets: MainAppWidgets,
     pub factories: gui::Factories,
+    #[builder(setter(skip), default)]
+    serieses: HashMap<i64, actix::Addr<SeriesActor>>,
     #[builder(setter(skip), default = TypedQuark::new("series_sort_and_filter_data"))]
     series_sort_and_filter_data: TypedQuark<SeriesSortAndFilterData>,
 }
 
 impl actix::Actor for MainAppActor {
     type Context = actix::Context<Self>;
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
         let css_provider = crate::Asset::css_provider("default.css");
         gtk::StyleContext::add_provider_for_screen(
             &self.widgets.app_main.get_screen().unwrap(),
             &css_provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
         self.widgets.app_main.show();
+        let addr = ctx.address();
+        ctx.spawn(async move {
+            addr.send(gui::msgs::UpdateMediaTypesList).await.unwrap().unwrap();
+            addr.send(gui::msgs::UpdateSeriesesList).await.unwrap().unwrap();
+        }.into_actor(self));
     }
 }
 
@@ -59,11 +68,14 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                     let new_files = crate::actors::DbActor::from_registry().send(crate::msgs::DiscoverFiles).await.unwrap().unwrap();
                     Self::register_files(crate::util::db::request_connection().await.unwrap(), new_files).await
                 }.into_actor(self)
+                .then(|result, actor, ctx| {
+                    result.unwrap();
+                    ctx.address().send(gui::msgs::UpdateSeriesesList).into_actor(actor)
+                })
                 .then(move |result, actor, _| {
                     button.set_sensitive(true);
                     actor.widgets.spn_scan_files.stop();
-                    result.unwrap();
-                    // TODO: referesh the lists
+                    result.unwrap().unwrap();
                     futures::future::ready(())
                 }));
                 None
@@ -143,44 +155,60 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
 impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
     type Result = ResponseActFuture<Self, anyhow::Result<()>>;
 
-    fn handle(&mut self, _: gui::msgs::UpdateSeriesesList, _ctx: &mut Self::Context) -> Self::Result {
-        #[derive(sqlx::FromRow)]
-        struct Extra {
-            num_episodes: i32,
-            num_unread: i32,
-        }
-
+    fn handle(&mut self, _: gui::msgs::UpdateSeriesesList, ctx: &mut Self::Context) -> Self::Result {
         Box::pin(
-            stream_query::<FromRowWithExtra<crate::models::Series, Extra>>(sqlx::query_as(r#"
-                SELECT serieses.*
-                    , SUM(date_of_read IS NULL) AS num_unread
-                    , COUNT(*) AS num_episodes
-                FROM serieses
-                INNER JOIN episodes ON serieses.id = episodes.series
-                GROUP BY serieses.id
-                ORDER BY serieses.id
-            "#))
-            .into_actor(self)
-            .map(|data, actor, _ctx| {
-                let data = data.unwrap();
-                actor.factories.row_series.instantiate().connect_with(|bld| {
-                    let widgets: SeriesWidgets = bld.widgets().unwrap();
-                    widgets.cbo_media_type.set_model(Some(&actor.widgets.lsm_media_types));
-                    actor.series_sort_and_filter_data.set(&widgets.row_series, (data.extra.num_episodes, data.extra.num_unread, &data.data).into());
-                    actor.widgets.lst_serieses.add(&widgets.row_series);
-                    SeriesActor::builder()
-                        .widgets(widgets)
-                        .factories(actor.factories.clone())
-                        .series(data.data)
-                        .num_episodes(data.extra.num_episodes)
-                        .num_unread(data.extra.num_unread)
-                        .series_sort_and_filter_data(actor.series_sort_and_filter_data)
-                        .build()
-                        .start()
-                });
+            crate::actors::DbActor::from_registry().send(crate::msgs::RefreshList {
+                orig_ids: self.serieses.keys().copied().collect(),
+                query: sqlx::query_as(r#"
+                    SELECT serieses.*
+                        , SUM(date_of_read IS NULL) AS num_unread
+                        , COUNT(*) AS num_episodes
+                    FROM serieses
+                    INNER JOIN episodes ON serieses.id = episodes.series
+                    GROUP BY serieses.id
+                    ORDER BY serieses.id
+                "#),
+                id_dlg: |row_data: &FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>| -> i64 {
+                    row_data.data.id
+                },
+                addr: ctx.address(),
+            }).into_actor(self)
+            .map(|result, _, _| {
+                if let Err(err) = result.unwrap() {
+                    log::error!("Can't refresh: {}", err);
+                }
+                Ok(())
             })
-            .finish()
-            .map(|_, _, _| Ok(()))
         )
+    }
+}
+
+impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>> for MainAppActor {
+    type Result = ();
+
+    fn handle(&mut self, data: crate::msgs::UpdateListRowData<FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>, _ctx: &mut Self::Context) -> Self::Result {
+        let crate::msgs::UpdateListRowData(data) = data;
+        match self.serieses.entry(data.data.id) {
+            hashbrown::hash_map::Entry::Occupied(entry) => {
+                entry.get().do_send(gui::msgs::UpdateActorData(data));
+            }
+            hashbrown::hash_map::Entry::Vacant(entry) => {
+                let bld = self.factories.row_series.instantiate();
+                let widgets: SeriesWidgets = bld.widgets().unwrap();
+                widgets.cbo_media_type.set_model(Some(&self.widgets.lsm_media_types));
+                self.series_sort_and_filter_data.set(&widgets.row_series, (data.extra.num_episodes, data.extra.num_unread, &data.data).into());
+                self.widgets.lst_serieses.add(&widgets.row_series);
+                let addr = SeriesActor::builder()
+                    .widgets(widgets)
+                    .factories(self.factories.clone())
+                    .series(data.data)
+                    .series_read_stats(data.extra)
+                    .series_sort_and_filter_data(self.series_sort_and_filter_data)
+                    .build()
+                    .start();
+                entry.insert(addr.clone());
+                bld.connect_to(addr);
+            }
+        }
     }
 }

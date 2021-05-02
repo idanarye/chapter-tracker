@@ -17,8 +17,6 @@ pub fn start_gui() -> anyhow::Result<()> {
                 .factories(factories)
                 .build()
                 .start();
-            main_app.do_send(msgs::UpdateMediaTypesList);
-            main_app.do_send(msgs::UpdateSeriesesList);
             main_app
         });
     });

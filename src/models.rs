@@ -18,6 +18,12 @@ pub struct Series {
 }
 
 #[derive(PartialEq, Debug, sqlx::FromRow)]
+pub struct SeriesReadStats {
+    pub num_episodes: i32,
+    pub num_unread: i32,
+}
+
+#[derive(PartialEq, Debug, sqlx::FromRow)]
 pub struct Directory {
     pub id: i64,
     pub series: i64,

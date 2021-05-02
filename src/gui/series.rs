@@ -12,8 +12,7 @@ pub struct SeriesActor {
     widgets: SeriesWidgets,
     factories: crate::gui::Factories,
     series: models::Series,
-    num_episodes: i32,
-    num_unread: i32,
+    series_read_stats: models::SeriesReadStats,
     #[builder(setter(skip), default)]
     episodes: HashMap<i64, EpisodeRow>,
     #[allow(dead_code)]
@@ -54,9 +53,7 @@ impl actix::Actor for SeriesActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        self.widgets.txt_series_name.set_text(&self.series.name);
-        self.widgets.cbo_media_type.set_active_id(Some(&self.series.media_type.to_string()));
-        self.widgets.tgl_unread.set_label(&format!("{}/{}", self.num_unread, self.num_episodes));
+        self.update_widgets_from_data();
         self.set_order_func()
     }
 }
@@ -91,6 +88,23 @@ impl actix::Handler<woab::Signal> for SeriesActor {
     }
 }
 
+impl actix::Handler<crate::gui::msgs::UpdateActorData<crate::util::db::FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>> for SeriesActor {
+    type Result = ();
+
+    fn handle(&mut self, data: crate::gui::msgs::UpdateActorData<crate::util::db::FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>, ctx: &mut Self::Context) -> Self::Result {
+        let crate::gui::msgs::UpdateActorData(data) = data;
+        if data.data != self.series || data.extra != self.series_read_stats {
+            self.series = data.data;
+            self.series_read_stats = data.extra;
+            self.update_widgets_from_data();
+            if self.widgets.rvl_episodes.get_reveal_child() {
+                self.update_episodes(ctx, None);
+            }
+            self.update_sort_and_filter_data();
+        }
+    }
+}
+
 impl actix::Handler<woab::Signal<i64>> for SeriesActor {
     type Result = woab::SignalResult;
 
@@ -106,6 +120,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     }.into_actor(self)
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
+                        actor.update_series_read_stats(ctx);
                         futures::future::ready(())
                     })
                 );
@@ -120,6 +135,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     }.into_actor(self)
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
+                        actor.update_series_read_stats(ctx);
                         futures::future::ready(())
                     })
                 );
@@ -131,6 +147,39 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
 }
 
 impl SeriesActor {
+    fn update_sort_and_filter_data(&self) {
+        self.series_sort_and_filter_data.set(&self.widgets.row_series, (
+                self.series_read_stats.num_episodes,
+                self.series_read_stats.num_unread,
+                &self.series,
+        ).into());
+        self.widgets.row_series.changed();
+    }
+    fn update_widgets_from_data(&self) {
+        self.widgets.txt_series_name.set_text(&self.series.name);
+        self.widgets.cbo_media_type.set_active_id(Some(&self.series.media_type.to_string()));
+        self.widgets.tgl_unread.set_label(&format!("{}/{}", self.series_read_stats.num_unread, self.series_read_stats.num_episodes));
+    }
+
+    fn update_series_read_stats(&mut self, ctx: &mut actix::Context<Self>) {
+        let query = sqlx::query_as(r#"
+                    SELECT SUM(date_of_read IS NULL) AS num_unread
+                         , COUNT(*) AS num_episodes
+                    FROM episodes
+                    WHERE series = ?
+                    "#).bind(self.series.id);
+        ctx.spawn(async move {
+            let mut con = db::request_connection().await.unwrap();
+            query.fetch_one(&mut con).await.unwrap()
+        }.into_actor(self)
+        .then(move |result, actor, _ctx| {
+            actor.series_read_stats = result;
+            actor.update_widgets_from_data();
+            actor.update_sort_and_filter_data();
+            futures::future::ready(())
+        }));
+    }
+
     fn update_episodes(&mut self, ctx: &mut actix::Context<Self>, episode_id: Option<i64>) {
 
         crate::actors::DbActor::from_registry().do_send(crate::msgs::RefreshList {
