@@ -51,3 +51,45 @@ impl Handler<crate::msgs::RequestConnection> for DbActor {
         Box::pin(self.pool.acquire())
     }
 }
+
+impl<T, Id, FId, A> Handler<crate::msgs::RefreshList<T, Id, FId, A>> for DbActor
+where
+    T: Send + Unpin + 'static,
+    for <'c> T: sqlx::FromRow<'c, sqlx::sqlite::SqliteRow>,
+    A: actix::Actor + actix::Handler<crate::msgs::UpdateListRowData<T>> + 'static,
+    <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::msgs::UpdateListRowData<T>>,
+    FId: Fn(&T) -> Id + 'static,
+    Id: core::hash::Hash + Eq + Send + 'static,
+{
+    type Result = ResponseActFuture<Self, anyhow::Result<()>>;
+
+    fn handle(&mut self, msg: crate::msgs::RefreshList<T, Id, FId, A>, _ctx: &mut Self::Context) -> Self::Result {
+        Box::pin(self.pool.acquire().then(|con| async move {
+            let mut con = con.unwrap();
+            let crate::msgs::RefreshList {
+                mut orig_ids,
+                query,
+                id_dlg,
+                addr,
+            } = msg;
+            query.fetch(&mut con)
+                .filter_map(|row_data| {
+                    async move {
+                        match row_data {
+                            Ok(ok) => Some(ok),
+                            Err(err) => {
+                                log::error!("Problem with episode: {}", err);
+                                None
+                            }
+                        }
+                    }
+                })
+                .for_each(|row_data| {
+                    let id = id_dlg(&row_data);
+                    orig_ids.remove(&id);
+                    addr.send(crate::msgs::UpdateListRowData(row_data)).map(|res| res.unwrap())
+                }).await;
+            Ok(())
+        }).into_actor(self))
+    }
+}

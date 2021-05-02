@@ -18,9 +18,7 @@ impl<'c, R: Row, D: sqlx::FromRow<'c, R>, E: sqlx::FromRow<'c, R>> sqlx::FromRow
     }
 }
 
-type SqliteQueryAs<'q, O> = sqlx::query::QueryAs<'q, sqlx::sqlite::Sqlite, O, <sqlx::sqlite::Sqlite as sqlx::database::HasArguments<'q>>::Arguments>;
-
-pub fn stream_query<T>(query: SqliteQueryAs<'static, T>) -> ReceiverStream<sqlx::Result<T>>
+pub fn stream_query<T>(query: crate::SqliteQueryAs<'static, T>) -> ReceiverStream<sqlx::Result<T>>
 where
     T: Unpin,
     T: Send,

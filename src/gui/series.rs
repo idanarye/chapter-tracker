@@ -132,43 +132,45 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
 
 impl SeriesActor {
     fn update_episodes(&mut self, ctx: &mut actix::Context<Self>, episode_id: Option<i64>) {
-        let query = if let Some(episode_id) = episode_id {
-            sqlx::query_as("SELECT * FROM episodes WHERE series = ? and id = ?").bind(self.series.id).bind(episode_id)
-        } else {
-            sqlx::query_as("SELECT * FROM episodes WHERE series = ?").bind(self.series.id)
-        };
-        ctx.spawn(
-            db::stream_query(query)
-            .into_actor(self)
-            .map(|data, actor, ctx| {
-                let data: models::Episode = match data {
-                    Ok(ok) => ok,
-                    Err(err) => {
-                        log::error!("Problem with episode: {}", err);
-                        return;
-                    }
-                };
-                match actor.episodes.entry(data.id) {
-                    hashbrown::hash_map::Entry::Occupied(mut entry) => {
-                        let entry = entry.get_mut();
-                        if entry.data != data {
-                            entry.data = data;
-                            actor.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.data).into());
-                            entry.update_widgets_from_data();
-                            entry.widgets.row_episode.changed();
-                        }
-                    }
-                    hashbrown::hash_map::Entry::Vacant(entry) => {
-                        let widgets: EpisodeWidgets = actor.factories.row_episode.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
-                        actor.episode_sort_and_filter_data.set(&widgets.row_episode, (&data).into());
-                        let entry = entry.insert(EpisodeRow { data, widgets });
-                        entry.update_widgets_from_data();
-                        actor.widgets.lst_episodes.add(&entry.widgets.row_episode);
-                    }
+
+        crate::actors::DbActor::from_registry().do_send(crate::msgs::RefreshList {
+            orig_ids: self.episodes.keys().copied().collect(),
+            query: if let Some(episode_id) = episode_id {
+                sqlx::query_as("SELECT * FROM episodes WHERE series = ? and id = ?").bind(self.series.id).bind(episode_id)
+            } else {
+                sqlx::query_as("SELECT * FROM episodes WHERE series = ?").bind(self.series.id)
+            },
+            id_dlg: |row_data: &models::Episode| -> i64 {
+                row_data.id
+            },
+            addr: ctx.address(),
+        });
+    }
+}
+
+impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::Episode>, ctx: &mut Self::Context) -> Self::Result {
+        let crate::msgs::UpdateListRowData(data) = msg;
+        match self.episodes.entry(data.id) {
+            hashbrown::hash_map::Entry::Occupied(mut entry) => {
+                let entry = entry.get_mut();
+                if entry.data != data {
+                    entry.data = data;
+                    self.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.data).into());
+                    entry.update_widgets_from_data();
+                    entry.widgets.row_episode.changed();
                 }
-            })
-            .finish()
-        );
+            }
+            hashbrown::hash_map::Entry::Vacant(entry) => {
+                let widgets: EpisodeWidgets = self.factories.row_episode.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
+                self.episode_sort_and_filter_data.set(&widgets.row_episode, (&data).into());
+                let entry = entry.insert(EpisodeRow { data, widgets });
+                entry.update_widgets_from_data();
+                self.widgets.lst_episodes.add(&entry.widgets.row_episode);
+            }
+        }
     }
 }
 
