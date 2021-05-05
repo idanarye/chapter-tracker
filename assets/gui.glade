@@ -57,7 +57,7 @@
                         <property name="activatable">False</property>
                         <property name="selectable">False</property>
                         <child>
-                          <!-- n-columns=3 n-rows=2 -->
+                          <!-- n-columns=6 n-rows=2 -->
                           <object class="GtkGrid">
                             <property name="name">g</property>
                             <property name="visible">True</property>
@@ -276,7 +276,7 @@
                               <packing>
                                 <property name="left-attach">0</property>
                                 <property name="top-attach">1</property>
-                                <property name="width">3</property>
+                                <property name="width">6</property>
                               </packing>
                             </child>
                             <child>
@@ -288,6 +288,66 @@
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="txt_download_command">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="editable">False</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">4</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="txt_download_command_dir">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="editable">False</property>
+                                <property name="primary-icon-stock">gtk-file</property>
+                                <property name="primary-icon-sensitive">False</property>
+                                <signal name="icon-press" handler="open_download_command_directory_dialog" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkStack" id="stk_series_edit">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="interpolate-size">True</property>
+                                <child>
+                                  <object class="GtkButton">
+                                    <property name="label" translatable="yes">Edit</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <signal name="clicked" handler="edit_series" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="name">normal</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="btn_save_series">
+                                    <property name="label" translatable="yes">Save</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                  </object>
+                                  <packing>
+                                    <property name="name">mid-edit</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="left-attach">5</property>
                                 <property name="top-attach">0</property>
                               </packing>
                             </child>

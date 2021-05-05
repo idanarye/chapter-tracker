@@ -66,6 +66,8 @@ pub struct SeriesWidgets {
     tgl_series_unread: gtk::ToggleButton,
     rvl_episodes: gtk::Revealer,
     lst_episodes: gtk::ListBox,
+    stk_series_edit: gtk::Stack,
+    btn_save_series: gtk::Button,
 }
 
 impl actix::Handler<woab::Signal> for SeriesActor {
@@ -81,6 +83,20 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 } else {
                     self.widgets.rvl_episodes.set_reveal_child(false);
                 }
+                None
+            }
+            "edit_series" => {
+                let stk_series_edit = self.widgets.stk_series_edit.clone();
+                stk_series_edit.set_property("visible-child-name", &"mid-edit").unwrap();
+                let btn_save_series = self.widgets.btn_save_series.clone();
+                ctx.spawn(async move {
+                    woab::wake_from_signal(&btn_save_series, |tx| {
+                        btn_save_series.connect_clicked(move |_| {
+                            let _ = tx.try_send(());
+                        })
+                    }).await.unwrap();
+                    stk_series_edit.set_property("visible-child-name", &"normal").unwrap();
+                }.into_actor(self));
                 None
             }
             _ => msg.cant_handle()?,
