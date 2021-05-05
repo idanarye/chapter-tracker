@@ -11,3 +11,8 @@
     background-image: none;
     background-color: lightgreen;
 }
+
+.unsaved-change, .unsaved-change entry, .unsaved-change button {
+    background-image: none;
+    background-color: yellow;
+}

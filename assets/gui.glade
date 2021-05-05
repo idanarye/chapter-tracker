@@ -47,6 +47,8 @@
                   <object class="GtkListBox" id="lst_serieses">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
                     <child>
                       <object class="GtkListBoxRow" id="row_series">
                         <property name="width-request">100</property>
@@ -57,10 +59,13 @@
                         <child>
                           <!-- n-columns=3 n-rows=2 -->
                           <object class="GtkGrid">
+                            <property name="name">g</property>
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="hexpand">True</property>
+                            <property name="vexpand">True</property>
                             <child>
-                              <object class="GtkComboBox" id="cbo_media_type">
+                              <object class="GtkComboBox" id="cbo_series_media_type">
                                 <property name="width-request">50</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
@@ -81,7 +86,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkToggleButton" id="tgl_unread">
+                              <object class="GtkToggleButton" id="tgl_series_unread">
                                 <property name="label" translatable="yes">
 </property>
                                 <property name="width-request">100</property>
@@ -136,6 +141,7 @@
                                                           <object class="GtkEntry" id="txt_name">
                                                             <property name="visible">True</property>
                                                             <property name="can-focus">True</property>
+                                                            <property name="hexpand">True</property>
                                                             <property name="editable">False</property>
                                                           </object>
                                                           <packing>
@@ -264,6 +270,170 @@
                                         <property name="tab-fill">False</property>
                                       </packing>
                                     </child>
+                                    <child>
+                                      <!-- n-columns=2 n-rows=6 -->
+                                      <object class="GtkGrid">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">end</property>
+                                            <property name="label" translatable="yes">Media Type:</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">end</property>
+                                            <property name="label" translatable="yes">Name:</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">end</property>
+                                            <property name="label" translatable="yes">Numbers Repeat Each Volume:</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">end</property>
+                                            <property name="label" translatable="yes">Download Command Directory:</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">end</property>
+                                            <property name="label" translatable="yes">Download Command:</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">4</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkComboBox" id="cbo_series_info_media_type">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="has-entry">True</property>
+                                            <property name="entry-text-column">1</property>
+                                            <property name="id-column">0</property>
+                                            <signal name="changed" handler="series-info-changed" swapped="no"/>
+                                            <child internal-child="entry">
+                                              <object class="GtkEntry">
+                                                <property name="can-focus">False</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkEntry" id="txt_series_info_name">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <signal name="changed" handler="series-info-changed" swapped="no"/>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkCheckButton" id="chk_series_info_numbers_repeat_each_volume">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="receives-default">False</property>
+                                            <property name="use-stock">True</property>
+                                            <property name="draw-indicator">True</property>
+                                            <signal name="toggled" handler="series-info-changed" swapped="no"/>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkFileChooserButton" id="fcb_series_info_download_command_directory">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="action">select-folder</property>
+                                            <property name="title" translatable="yes"/>
+                                            <signal name="file-set" handler="series-info-changed" swapped="no"/>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkEntry" id="txt_series_info_download_command">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="max-width-chars">1</property>
+                                            <signal name="changed" handler="series-info-changed" swapped="no"/>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">4</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="label" translatable="yes">Save</property>
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="receives-default">True</property>
+                                            <signal name="clicked" handler="save_series_info" swapped="no"/>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">5</property>
+                                            <property name="width">2</property>
+                                          </packing>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="position">2</property>
+                                      </packing>
+                                    </child>
+                                    <child type="tab">
+                                      <object class="GtkLabel" id="cbo_media_typ">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="label" translatable="yes">Series Info</property>
+                                      </object>
+                                      <packing>
+                                        <property name="position">2</property>
+                                        <property name="tab-fill">False</property>
+                                      </packing>
+                                    </child>
                                   </object>
                                 </child>
                               </object>
@@ -277,6 +447,7 @@
                               <object class="GtkEntry" id="txt_series_name">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
                                 <property name="editable">False</property>
                               </object>
                               <packing>

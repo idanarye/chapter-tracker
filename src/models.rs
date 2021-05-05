@@ -7,7 +7,7 @@ pub struct MediaType {
     pub program: String,
 }
 
-#[derive(PartialEq, Debug, sqlx::FromRow)]
+#[derive(PartialEq, Debug, Clone, sqlx::FromRow)]
 pub struct Series {
     pub id: i64,
     pub media_type: i64,

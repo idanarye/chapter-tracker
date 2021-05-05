@@ -195,7 +195,8 @@ impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<crate::model
             hashbrown::hash_map::Entry::Vacant(entry) => {
                 let bld = self.factories.row_series.instantiate();
                 let widgets: SeriesWidgets = bld.widgets().unwrap();
-                widgets.cbo_media_type.set_model(Some(&self.widgets.lsm_media_types));
+                widgets.cbo_series_media_type.set_model(Some(&self.widgets.lsm_media_types));
+                widgets.series_info.cbo_series_info_media_type.set_model(Some(&self.widgets.lsm_media_types));
                 self.series_sort_and_filter_data.set(&widgets.row_series, (data.extra.num_episodes, data.extra.num_unread, &data.data).into());
                 self.widgets.lst_serieses.add(&widgets.row_series);
                 let addr = SeriesActor::builder()
