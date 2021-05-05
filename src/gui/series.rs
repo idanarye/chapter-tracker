@@ -86,17 +86,16 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 None
             }
             "edit_series" => {
-                let stk_series_edit = self.widgets.stk_series_edit.clone();
-                stk_series_edit.set_property("visible-child-name", &"mid-edit").unwrap();
-                let btn_save_series = self.widgets.btn_save_series.clone();
-                ctx.spawn(async move {
-                    woab::wake_from_signal(&btn_save_series, |tx| {
-                        btn_save_series.connect_clicked(move |_| {
-                            let _ = tx.try_send(());
-                        })
-                    }).await.unwrap();
-                    stk_series_edit.set_property("visible-child-name", &"normal").unwrap();
-                }.into_actor(self));
+                ctx.spawn(
+                    crate::util::edit_mode::EditMode::builder()
+                    .stack(self.widgets.stk_series_edit.clone())
+                    .save_button(self.widgets.btn_save_series.clone())
+                    .build()
+                    .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.series.name.clone())
+                    .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type)
+                    .edit_mode()
+                    .into_actor(self)
+                );
                 None
             }
             _ => msg.cant_handle()?,

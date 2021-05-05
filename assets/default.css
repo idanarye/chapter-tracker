@@ -12,7 +12,7 @@
     background-color: lightgreen;
 }
 
-.unsaved-change, .unsaved-change entry, .unsaved-change button {
+.unsaved-change, .unsaved-change entry {
     background-image: none;
     background-color: yellow;
 }
