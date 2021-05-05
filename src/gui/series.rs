@@ -66,17 +66,6 @@ pub struct SeriesWidgets {
     tgl_series_unread: gtk::ToggleButton,
     rvl_episodes: gtk::Revealer,
     lst_episodes: gtk::ListBox,
-    #[widget(nested)]
-    pub series_info: SeriesInfoWidgets,
-}
-
-#[derive(woab::WidgetsFromBuilder, Clone)]
-pub struct SeriesInfoWidgets {
-    txt_series_info_name: gtk::Entry,
-    pub cbo_series_info_media_type: gtk::ComboBox,
-    chk_series_info_numbers_repeat_each_volume: gtk::CheckButton,
-    fcb_series_info_download_command_directory: gtk::FileChooserButton,
-    txt_series_info_download_command: gtk::Entry,
 }
 
 impl actix::Handler<woab::Signal> for SeriesActor {
@@ -88,17 +77,10 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 let toggle_button: gtk::ToggleButton = msg.param(0)?;
                 if toggle_button.get_active() {
                     self.update_episodes(ctx, None);
-                    self.reset_series_info_fields(ctx);
                     self.widgets.rvl_episodes.set_reveal_child(true);
                 } else {
                     self.widgets.rvl_episodes.set_reveal_child(false);
                 }
-                None
-            }
-            "series-info-changed" => {
-                let widget: gtk::Widget = msg.param(0)?;
-                self.update_series_info_styles(widget);
-                // log::info!("Series info changed! {:?}", widget.get_buildable_name());
                 None
             }
             _ => msg.cant_handle()?,
@@ -178,58 +160,6 @@ impl SeriesActor {
         self.widgets.txt_series_name.set_text(&self.series.name);
         self.widgets.cbo_series_media_type.set_active_id(Some(&self.series.media_type.to_string()));
         self.widgets.tgl_series_unread.set_label(&format!("{}/{}", self.series_read_stats.num_unread, self.series_read_stats.num_episodes));
-    }
-
-    fn reset_series_info_fields(&self, ctx: &mut actix::Context<Self>) {
-        let series_info_widgets = self.widgets.series_info.clone();
-        let series = self.series.clone();
-        ctx.spawn(async move {
-            woab::outside(async move {
-                series_info_widgets.txt_series_info_name.set_text(&series.name);
-                series_info_widgets.cbo_series_info_media_type.set_active_id(Some(&series.media_type.to_string()));
-                series_info_widgets.cbo_series_info_media_type.set_active_id(Some(&series.media_type.to_string()));
-                series_info_widgets.chk_series_info_numbers_repeat_each_volume.set_active(series.numbers_repeat_each_volume.unwrap_or(false));
-                if let Some(download_command_dir) = series.download_command_dir {
-                    series_info_widgets.fcb_series_info_download_command_directory.set_filename(&download_command_dir);
-                } else {
-                    series_info_widgets.fcb_series_info_download_command_directory.set_filename("");
-                }
-                if let Some(download_command) = series.download_command {
-                    series_info_widgets.txt_series_info_download_command.set_text(&download_command);
-                } else {
-                    series_info_widgets.txt_series_info_download_command.set_text("");
-                }
-            }).await.unwrap();
-        }.into_actor(self));
-    }
-
-    fn update_series_info_styles(&self, widget: gtk::Widget) {
-        let which = widget.get_buildable_name().expect("Widget has no builder ID");
-        let series_info_widgets = &self.widgets.series_info;
-        let same_as_data = match which.as_ref() {
-            "txt_series_info_name" => series_info_widgets.txt_series_info_name.get_text() == self.series.name,
-            "cbo_series_info_media_type" => {
-                series_info_widgets.cbo_series_info_media_type.get_active_id().map(|s| s.as_str().parse::<i64>() == Ok(self.series.media_type)).unwrap_or(false)
-            }
-            "chk_series_info_numbers_repeat_each_volume" => series_info_widgets.chk_series_info_numbers_repeat_each_volume.get_active() == self.series.numbers_repeat_each_volume.unwrap_or(false),
-            "fcb_series_info_download_command_directory" => {
-                let widget_value = series_info_widgets.fcb_series_info_download_command_directory.get_filename();
-                let widget_value = widget_value.as_ref().and_then(|s| s.to_str()).unwrap_or("");
-                let data_value = self.series.download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or("");
-                widget_value == data_value
-            }
-            "txt_series_info_download_command" => {
-                let widget_value = series_info_widgets.txt_series_info_download_command.get_text();
-                let data_value = self.series.download_command.as_ref().map(|s| s.as_str()).unwrap_or("");
-                widget_value == data_value
-            }
-            _ => panic!("Unknown series info widget {:?}", which),
-        };
-        if same_as_data {
-            widget.get_style_context().remove_class("unsaved-change");
-        } else {
-            widget.get_style_context().add_class("unsaved-change");
-        }
     }
 
     fn update_series_read_stats(&mut self, ctx: &mut actix::Context<Self>) {
