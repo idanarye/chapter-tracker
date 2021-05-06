@@ -70,6 +70,25 @@ pub struct SeriesWidgets {
     btn_save_series: gtk::Button,
 }
 
+pub struct SeriesWidgetsData {
+    pub txt_series_name: String,
+    pub cbo_series_media_type: String,
+}
+
+impl SeriesWidgets {
+    pub fn set_data(&self, data: &SeriesWidgetsData) {
+        self.txt_series_name.set_property("text", &data.txt_series_name).unwrap();
+        self.cbo_series_media_type.set_property("active-id", &data.cbo_series_media_type).unwrap();
+    }
+
+    pub fn get_data(&self) -> SeriesWidgetsData {
+        SeriesWidgetsData {
+            txt_series_name: self.txt_series_name.get_property("text").unwrap().get().unwrap().unwrap(),
+            cbo_series_media_type: self.cbo_series_media_type.get_property("active-id").unwrap().get().unwrap().unwrap(),
+        }
+    }
+}
+
 impl actix::Handler<woab::Signal> for SeriesActor {
     type Result = woab::SignalResult;
 
@@ -95,6 +114,18 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type)
                     .edit_mode()
                     .into_actor(self)
+                    .then(|_, actor, _| {
+                        let SeriesWidgetsData { txt_series_name, cbo_series_media_type } = actor.widgets.get_data();
+                        let query = sqlx::query("UPDATE serieses SET name = ?, media_type = ? WHERE id == ?")
+                            .bind(txt_series_name)
+                            .bind(cbo_series_media_type.parse::<i64>().unwrap())
+                            .bind(actor.series.id)
+                            ;
+                        async move {
+                            let mut con = db::request_connection().await.unwrap();
+                            query.execute(&mut con).await.unwrap();
+                        }.into_actor(actor)
+                    })
                 );
                 None
             }
@@ -172,8 +203,10 @@ impl SeriesActor {
     }
 
     fn update_widgets_from_data(&self) {
-        self.widgets.txt_series_name.set_text(&self.series.name);
-        self.widgets.cbo_series_media_type.set_active_id(Some(&self.series.media_type.to_string()));
+        self.widgets.set_data(&SeriesWidgetsData {
+            txt_series_name: self.series.name.clone(),
+            cbo_series_media_type: self.series.media_type.to_string(),
+        });
         self.widgets.tgl_series_unread.set_label(&format!("{}/{}", self.series_read_stats.num_unread, self.series_read_stats.num_episodes));
     }
 
