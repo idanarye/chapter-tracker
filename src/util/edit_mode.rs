@@ -5,7 +5,6 @@ pub struct EditMode {
     stack: gtk::Stack,
     save_button: gtk::Button,
     #[builder(default, setter(skip))]
-    // widgets_to_restore: Vec<(gtk::Widget, glib::SignalHandlerId)>,
     restoration_callbacks: Vec<Box<dyn FnOnce()>>,
 }
 
@@ -38,11 +37,26 @@ impl EditMode {
         self
     }
 
-    pub async fn edit_mode(self) {
+    pub async fn edit_mode<T: Send + Clone + 'static>(self, save_handler: actix::Recipient<InitiateSave<T>>, tag: T) {
         self.stack.set_property("visible-child-name", &"mid-edit").unwrap();
         woab::wake_from_signal(&self.save_button, |tx| {
             self.save_button.connect_clicked(move |_| {
-                let _ = tx.try_send(());
+                let save_handler = save_handler.clone();
+                let tx = tx.clone();
+                let tag = tag.clone();
+                woab::block_on(async move {
+                    actix::spawn(async move {
+                        let should_save = save_handler.send(InitiateSave(tag.clone())).await.unwrap();
+                        match should_save {
+                            Ok(()) => {
+                                let _ = tx.try_send(());
+                            }
+                            Err(err) => {
+                                log::error!("Cannot save: {}", err);
+                            }
+                        }
+                    });
+                });
             })
         }).await.unwrap();
         self.stack.set_property("visible-child-name", &"normal").unwrap();
@@ -83,4 +97,10 @@ impl WidgetForEditMode<i64> for gtk::ComboBox {
             -1
         }
     }
+}
+
+pub struct InitiateSave<T = ()>(T);
+
+impl<T> actix::Message for InitiateSave<T> {
+    type Result = anyhow::Result<()>;
 }

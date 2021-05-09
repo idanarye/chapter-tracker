@@ -63,6 +63,8 @@ pub struct SeriesWidgets {
     pub row_series: gtk::ListBoxRow,
     txt_series_name: gtk::Entry,
     pub cbo_series_media_type: gtk::ComboBox,
+    txt_download_command: gtk::Entry,
+    txt_download_command_dir: gtk::Entry,
     tgl_series_unread: gtk::ToggleButton,
     rvl_episodes: gtk::Revealer,
     lst_episodes: gtk::ListBox,
@@ -70,21 +72,34 @@ pub struct SeriesWidgets {
     btn_save_series: gtk::Button,
 }
 
-pub struct SeriesWidgetsData {
-    pub txt_series_name: String,
-    pub cbo_series_media_type: String,
+pub struct SeriesWidgetsSetter<'a> {
+    txt_series_name: &'a str,
+    cbo_series_media_type: &'a str,
+    txt_download_command_dir: &'a str,
+    txt_download_command: &'a str,
+}
+
+pub struct SeriesWidgetsGetter {
+    txt_series_name: <str as std::borrow::ToOwned>::Owned,
+    cbo_series_media_type: <str as std::borrow::ToOwned>::Owned,
+    txt_download_command: <str as std::borrow::ToOwned>::Owned,
+    txt_download_command_dir: <str as std::borrow::ToOwned>::Owned,
 }
 
 impl SeriesWidgets {
-    pub fn set_data(&self, data: &SeriesWidgetsData) {
+    pub fn set_data(&self, data: &SeriesWidgetsSetter) {
         self.txt_series_name.set_property("text", &data.txt_series_name).unwrap();
         self.cbo_series_media_type.set_property("active-id", &data.cbo_series_media_type).unwrap();
+        self.txt_download_command.set_property("text", &data.txt_download_command).unwrap();
+        self.txt_download_command_dir.set_property("text", &data.txt_download_command_dir).unwrap();
     }
 
-    pub fn get_data(&self) -> SeriesWidgetsData {
-        SeriesWidgetsData {
+    pub fn get_data(&self) -> SeriesWidgetsGetter {
+        SeriesWidgetsGetter {
             txt_series_name: self.txt_series_name.get_property("text").unwrap().get().unwrap().unwrap(),
             cbo_series_media_type: self.cbo_series_media_type.get_property("active-id").unwrap().get().unwrap().unwrap(),
+            txt_download_command: self.txt_download_command.get_property("text").unwrap().get().unwrap().unwrap(),
+            txt_download_command_dir: self.txt_download_command_dir.get_property("text").unwrap().get().unwrap().unwrap(),
         }
     }
 }
@@ -112,25 +127,72 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     .build()
                     .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.series.name.clone())
                     .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type)
-                    .edit_mode()
+                    .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.series.download_command.clone().unwrap_or_else(|| "".to_owned()))
+                    .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.series.download_command_dir.clone().unwrap_or_else(|| "".to_owned()))
+                    .edit_mode(ctx.address().recipient(), ())
                     .into_actor(self)
                     .then(|_, actor, _| {
-                        let SeriesWidgetsData { txt_series_name, cbo_series_media_type } = actor.widgets.get_data();
-                        let query = sqlx::query("UPDATE serieses SET name = ?, media_type = ? WHERE id == ?")
-                            .bind(txt_series_name)
-                            .bind(cbo_series_media_type.parse::<i64>().unwrap())
-                            .bind(actor.series.id)
-                            ;
+                        let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?").bind(actor.series.id);
                         async move {
                             let mut con = db::request_connection().await.unwrap();
-                            query.execute(&mut con).await.unwrap();
+                             query.fetch_one(&mut con).await.unwrap()
                         }.into_actor(actor)
+                        .then(|result, actor, _| {
+                            actor.series = result;
+                            let models::Series {
+                                id: _,
+                                media_type,
+                                name,
+                                numbers_repeat_each_volume: _,
+                                download_command_dir,
+                                download_command,
+                            } = &actor.series;
+                            actor.widgets.set_data(&SeriesWidgetsSetter {
+                                txt_series_name: name,
+                                cbo_series_media_type: &media_type.to_string(),
+                                txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                                txt_download_command_dir: download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                            });
+                            futures::future::ready(())
+                        })
                     })
                 );
                 None
             }
             _ => msg.cant_handle()?,
         })
+    }
+}
+
+impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
+    type Result = actix::ResponseActFuture<Self, anyhow::Result<()>>;
+
+    fn handle(&mut self, _msg: crate::util::edit_mode::InitiateSave, _ctx: &mut Self::Context) -> Self::Result {
+        let SeriesWidgetsGetter {
+            txt_series_name,
+            cbo_series_media_type,
+            txt_download_command,
+            txt_download_command_dir,
+        } = self.widgets.get_data();
+        let query = sqlx::query(r#"
+            UPDATE serieses
+            SET name = ?
+              , media_type = ?
+              , download_command = ?
+              , download_command_dir = ?
+            WHERE id == ?
+        "#)
+            .bind(txt_series_name)
+            .bind(cbo_series_media_type.parse::<i64>().unwrap())
+            .bind(txt_download_command)
+            .bind(txt_download_command_dir)
+            .bind(self.series.id)
+            ;
+        Box::pin(async move {
+            let mut con = db::request_connection().await?;
+            query.execute(&mut con).await?;
+            Ok(())
+        }.into_actor(self))
     }
 }
 
@@ -203,9 +265,11 @@ impl SeriesActor {
     }
 
     fn update_widgets_from_data(&self) {
-        self.widgets.set_data(&SeriesWidgetsData {
-            txt_series_name: self.series.name.clone(),
-            cbo_series_media_type: self.series.media_type.to_string(),
+        self.widgets.set_data(&SeriesWidgetsSetter {
+            txt_series_name: &self.series.name,
+            cbo_series_media_type: &self.series.media_type.to_string(),
+            txt_download_command: self.series.download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
+            txt_download_command_dir: self.series.download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
         });
         self.widgets.tgl_series_unread.set_label(&format!("{}/{}", self.series_read_stats.num_unread, self.series_read_stats.num_episodes));
     }
