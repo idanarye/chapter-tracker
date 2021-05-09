@@ -296,6 +296,9 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="editable">False</property>
+                                <property name="primary-icon-stock">gtk-execute</property>
+                                <property name="secondary-icon-stock">gtk-clear</property>
+                                <signal name="icon-press" handler="execute_download_command" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">4</property>
@@ -307,8 +310,8 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="editable">False</property>
-                                <property name="primary-icon-stock">gtk-file</property>
-                                <property name="primary-icon-sensitive">False</property>
+                                <property name="primary-icon-stock">gtk-directory</property>
+                                <property name="secondary-icon-stock">gtk-clear</property>
                                 <signal name="icon-press" handler="open_download_command_directory_dialog" swapped="no"/>
                               </object>
                               <packing>

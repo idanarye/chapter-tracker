@@ -159,6 +159,75 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 );
                 None
             }
+            "open_download_command_directory_dialog" => {
+                if !self.widgets.txt_download_command_dir.get_editable() {
+                    return Ok(None)
+                }
+                let icon_position: gtk::EntryIconPosition = msg.param(1)?;
+                match (self.widgets.txt_download_command_dir.get_editable(), icon_position) {
+                    (true, gtk::EntryIconPosition::Primary) => {
+                        let txt_download_command_dir = self.widgets.txt_download_command_dir.clone();
+                        ctx.spawn(async move {
+                            let dialog = gtk::FileChooserDialog::with_buttons::<gtk::ApplicationWindow>(
+                                None,
+                                None,
+                                gtk::FileChooserAction::CreateFolder,
+                                &[("_Cancel", gtk::ResponseType::Cancel), ("_Select", gtk::ResponseType::Accept)],
+                            );
+                            let current_choice = txt_download_command_dir.get_text();
+                            dialog.set_filename(current_choice.as_str());
+                            let result = woab::run_dialog(&dialog, false).await;
+                            let filename = dialog.get_filename();
+                            dialog.close();
+                            if let (gtk::ResponseType::Accept, Some(filename)) = (result, filename) {
+                                txt_download_command_dir.set_text(&filename.to_string_lossy());
+                            }
+                        }.into_actor(self));
+                    }
+                    (true, gtk::EntryIconPosition::Secondary) => {
+                        self.widgets.txt_download_command_dir.set_text("");
+                    }
+                    _ => (),
+                }
+                None
+            }
+            "execute_download_command" => {
+                let icon_position: gtk::EntryIconPosition = msg.param(1)?;
+                match (self.widgets.txt_download_command_dir.get_editable(), icon_position) {
+                    (_, gtk::EntryIconPosition::Primary) => {
+                        let download_command = self.widgets.txt_download_command.get_text();
+                        let download_command = download_command.as_str();
+                        if download_command != "" {
+                            use std::process::Command;
+                            let mut command = if cfg!(target_os = "windows") {
+                                let mut command = Command::new("cmd");
+                                command.arg("/C");
+                                command
+                            } else {
+                                let mut command = Command::new("sh");
+                                command.arg("-c");
+                                command
+                            };
+
+                            command.arg(download_command);
+
+                            let download_command_dir = self.widgets.txt_download_command_dir.get_text();
+                            let download_command_dir = download_command_dir.as_str();
+                            if download_command_dir != "" {
+                                command.current_dir(download_command_dir);
+                            }
+                            if let Err(err) = command.spawn() {
+                                log::error!("Failed to spawn {:?}: {}", command, err);
+                            }
+                        }
+                    }
+                    (true, gtk::EntryIconPosition::Secondary) => {
+                        self.widgets.txt_download_command.set_text("");
+                    }
+                    _ => (),
+                }
+                None
+            }
             _ => msg.cant_handle()?,
         })
     }
