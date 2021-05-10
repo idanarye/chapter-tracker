@@ -22,3 +22,5 @@ impl Asset {
 
 type SqlitePoolConnection = sqlx::pool::PoolConnection<sqlx::Sqlite>;
 type SqliteQueryAs<'q, O> = sqlx::query::QueryAs<'q, sqlx::sqlite::Sqlite, O, <sqlx::sqlite::Sqlite as sqlx::database::HasArguments<'q>>::Arguments>;
+
+pub use chapter_tracker_macros::ProcSync;

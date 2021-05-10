@@ -58,50 +58,22 @@ impl actix::Actor for SeriesActor {
     }
 }
 
-#[derive(woab::WidgetsFromBuilder)]
+#[derive(woab::WidgetsFromBuilder, crate::ProcSync)]
 pub struct SeriesWidgets {
     pub row_series: gtk::ListBoxRow,
+    #[prop_sync(set, get)]
     txt_series_name: gtk::Entry,
+    #[prop_sync("active-id": &str, set, get)]
     pub cbo_series_media_type: gtk::ComboBox,
+    #[prop_sync(set, get)]
     txt_download_command: gtk::Entry,
+    #[prop_sync(set, get)]
     txt_download_command_dir: gtk::Entry,
     tgl_series_unread: gtk::ToggleButton,
     rvl_episodes: gtk::Revealer,
     lst_episodes: gtk::ListBox,
     stk_series_edit: gtk::Stack,
     btn_save_series: gtk::Button,
-}
-
-pub struct SeriesWidgetsSetter<'a> {
-    txt_series_name: &'a str,
-    cbo_series_media_type: &'a str,
-    txt_download_command_dir: &'a str,
-    txt_download_command: &'a str,
-}
-
-pub struct SeriesWidgetsGetter {
-    txt_series_name: <str as std::borrow::ToOwned>::Owned,
-    cbo_series_media_type: <str as std::borrow::ToOwned>::Owned,
-    txt_download_command: <str as std::borrow::ToOwned>::Owned,
-    txt_download_command_dir: <str as std::borrow::ToOwned>::Owned,
-}
-
-impl SeriesWidgets {
-    pub fn set_data(&self, data: &SeriesWidgetsSetter) {
-        self.txt_series_name.set_property("text", &data.txt_series_name).unwrap();
-        self.cbo_series_media_type.set_property("active-id", &data.cbo_series_media_type).unwrap();
-        self.txt_download_command.set_property("text", &data.txt_download_command).unwrap();
-        self.txt_download_command_dir.set_property("text", &data.txt_download_command_dir).unwrap();
-    }
-
-    pub fn get_data(&self) -> SeriesWidgetsGetter {
-        SeriesWidgetsGetter {
-            txt_series_name: self.txt_series_name.get_property("text").unwrap().get().unwrap().unwrap(),
-            cbo_series_media_type: self.cbo_series_media_type.get_property("active-id").unwrap().get().unwrap().unwrap(),
-            txt_download_command: self.txt_download_command.get_property("text").unwrap().get().unwrap().unwrap(),
-            txt_download_command_dir: self.txt_download_command_dir.get_property("text").unwrap().get().unwrap().unwrap(),
-        }
-    }
 }
 
 impl actix::Handler<woab::Signal> for SeriesActor {
@@ -147,7 +119,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                                 download_command_dir,
                                 download_command,
                             } = &actor.series;
-                            actor.widgets.set_data(&SeriesWidgetsSetter {
+                            actor.widgets.set_data(&SeriesWidgetsPropSetter {
                                 txt_series_name: name,
                                 cbo_series_media_type: &media_type.to_string(),
                                 txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
@@ -237,7 +209,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
     type Result = actix::ResponseActFuture<Self, anyhow::Result<()>>;
 
     fn handle(&mut self, _msg: crate::util::edit_mode::InitiateSave, _ctx: &mut Self::Context) -> Self::Result {
-        let SeriesWidgetsGetter {
+        let SeriesWidgetsPropGetter {
             txt_series_name,
             cbo_series_media_type,
             txt_download_command,
@@ -334,7 +306,7 @@ impl SeriesActor {
     }
 
     fn update_widgets_from_data(&self) {
-        self.widgets.set_data(&SeriesWidgetsSetter {
+        self.widgets.set_data(&SeriesWidgetsPropSetter {
             txt_series_name: &self.series.name,
             cbo_series_media_type: &self.series.media_type.to_string(),
             txt_download_command: self.series.download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
