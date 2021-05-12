@@ -58,7 +58,7 @@ impl actix::Actor for SeriesActor {
     }
 }
 
-#[derive(woab::WidgetsFromBuilder, crate::ProcSync)]
+#[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 pub struct SeriesWidgets {
     pub row_series: gtk::ListBoxRow,
     #[prop_sync(set, get)]
@@ -119,7 +119,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                                 download_command_dir,
                                 download_command,
                             } = &actor.series;
-                            actor.widgets.set_data(&SeriesWidgetsPropSetter {
+                            actor.widgets.set_props(&SeriesWidgetsPropSetter {
                                 txt_series_name: name,
                                 cbo_series_media_type: &media_type.to_string(),
                                 txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
@@ -214,7 +214,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
             cbo_series_media_type,
             txt_download_command,
             txt_download_command_dir,
-        } = self.widgets.get_data();
+        } = self.widgets.get_props();
         let query = sqlx::query(r#"
             UPDATE serieses
             SET name = ?
@@ -306,7 +306,7 @@ impl SeriesActor {
     }
 
     fn update_widgets_from_data(&self) {
-        self.widgets.set_data(&SeriesWidgetsPropSetter {
+        self.widgets.set_props(&SeriesWidgetsPropSetter {
             txt_series_name: &self.series.name,
             cbo_series_media_type: &self.series.media_type.to_string(),
             txt_download_command: self.series.download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),

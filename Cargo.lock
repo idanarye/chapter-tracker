@@ -235,7 +235,6 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "anyhow",
- "chapter-tracker-macros",
  "flexi_logger",
  "futures",
  "fuzzy-matcher",
@@ -250,15 +249,6 @@ dependencies = [
  "tokio-stream",
  "typed-builder",
  "woab",
-]
-
-[[package]]
-name = "chapter-tracker-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -1849,8 +1839,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "woab"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7cf433eeead00e58f74b304a82ee49d91a2cd1dd63f829fb4821caff4f6d02a"
+source = "git+https://github.com/idanarye/woab.git?branch=proc-sync-macro#e9916a1cc463867a9a907601c91820c0422f1de3"
 dependencies = [
  "actix",
  "gio",
@@ -1867,8 +1856,7 @@ dependencies = [
 [[package]]
 name = "woab-macros"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dc53093a1f8af99a77abc19ce152882c7865c963ced9aefd71ed1682e2b7b3c"
+source = "git+https://github.com/idanarye/woab.git?branch=proc-sync-macro#e9916a1cc463867a9a907601c91820c0422f1de3"
 dependencies = [
  "proc-macro2",
  "quote",
