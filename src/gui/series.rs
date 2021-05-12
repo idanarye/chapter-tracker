@@ -97,10 +97,10 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     .stack(self.widgets.stk_series_edit.clone())
                     .save_button(self.widgets.btn_save_series.clone())
                     .build()
-                    .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.series.name.clone())
-                    .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type)
-                    .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.series.download_command.clone().unwrap_or_else(|| "".to_owned()))
-                    .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.series.download_command_dir.clone().unwrap_or_else(|| "".to_owned()))
+                    .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.series.name.clone(), |_| Ok(()))
+                    .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type, |_| Ok(()))
+                    .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.series.download_command.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
+                    .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.series.download_command_dir.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
                     .edit_mode(ctx.address().recipient(), ())
                     .into_actor(self)
                     .then(|_, actor, _| {
@@ -109,24 +109,24 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                             let mut con = db::request_connection().await.unwrap();
                              query.fetch_one(&mut con).await.unwrap()
                         }.into_actor(actor)
-                        .then(|result, actor, _| {
-                            actor.series = result;
-                            let models::Series {
-                                id: _,
-                                media_type,
-                                name,
-                                numbers_repeat_each_volume: _,
-                                download_command_dir,
-                                download_command,
-                            } = &actor.series;
-                            actor.widgets.set_props(&SeriesWidgetsPropSetter {
-                                txt_series_name: name,
-                                cbo_series_media_type: &media_type.to_string(),
-                                txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
-                                txt_download_command_dir: download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
-                            });
-                            futures::future::ready(())
-                        })
+                    })
+                    .then(|result, actor, _| {
+                        actor.series = result;
+                        let models::Series {
+                            id: _,
+                            media_type,
+                            name,
+                            // numbers_repeat_each_volume: _,
+                            download_command_dir,
+                            download_command,
+                        } = &actor.series;
+                        actor.widgets.set_props(&SeriesWidgetsPropSetter {
+                            txt_series_name: name,
+                            cbo_series_media_type: &media_type.to_string(),
+                            txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                            txt_download_command_dir: download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                        });
+                        futures::future::ready(())
                     })
                 );
                 None
@@ -227,8 +227,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
             .bind(cbo_series_media_type.parse::<i64>().unwrap())
             .bind(txt_download_command)
             .bind(txt_download_command_dir)
-            .bind(self.series.id)
-            ;
+            .bind(self.series.id);
         Box::pin(async move {
             let mut con = db::request_connection().await?;
             query.execute(&mut con).await?;
@@ -285,6 +284,39 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
                         actor.update_series_read_stats(ctx);
+                        futures::future::ready(())
+                    })
+                );
+                None
+            }
+            "edit_episode" => {
+                let episode = &self.episodes[&episode_id];
+                ctx.spawn(
+                    crate::util::edit_mode::EditMode::builder()
+                    .stack(episode.widgets.stk_episode_edit.clone())
+                    .save_button(episode.widgets.btn_save_episode.clone())
+                    .build()
+                    .with_edit_widget(episode.widgets.txt_volume.clone(), "changed", episode.data.volume.map(|s| s.to_string()).unwrap_or_else(|| "".to_owned()), |text| {
+                        if text == "" {
+                            return Ok(())
+                        }
+                        match text.parse::<i64>() {
+                            Ok(_) => Ok(()),
+                            Err(err) => Err(err.to_string()),
+                        }
+                    })
+                    .with_edit_widget(episode.widgets.txt_chapter.clone(), "changed", episode.data.number.to_string(), |text| {
+                        match text.parse::<i64>() {
+                            Ok(_) => Ok(()),
+                            Err(err) => Err(err.to_string()),
+                        }
+                    })
+                    .with_edit_widget(episode.widgets.txt_name.clone(), "changed", episode.data.name.clone(), |_| Ok(()))
+                    .with_edit_widget(episode.widgets.txt_file.clone(), "changed", episode.data.file.clone(), |_| Ok(()))
+                    .edit_mode(ctx.address().recipient(), episode_id)
+                    .into_actor(self)
+                    .then(move |_, actor, ctx| {
+                        actor.update_episodes(ctx, Some(episode_id));
                         futures::future::ready(())
                     })
                 );
@@ -387,7 +419,7 @@ impl EpisodeRow {
         self.widgets.set_props(&EpisodeWidgetsPropSetter {
             txt_name: &self.data.name,
             txt_file: &self.data.file,
-            txt_volume: &self.data.volume.map(|v| v.to_string()).unwrap_or("".to_string()),
+            txt_volume: &self.data.volume.map(|v| v.to_string()).unwrap_or_else(|| "".to_owned()),
             txt_chapter: &self.data.number.to_string(),
         });
         self.widgets.stk_read_state.set_property(
@@ -404,31 +436,65 @@ impl EpisodeRow {
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct EpisodeWidgets {
     row_episode: gtk::ListBoxRow,
-    #[prop_sync(set)]
+    #[prop_sync(set, get)]
     txt_volume: gtk::Entry,
-    #[prop_sync(set)]
+    #[prop_sync(set, get)]
     txt_chapter: gtk::Entry,
-    #[prop_sync(set)]
+    #[prop_sync(set, get)]
     txt_name: gtk::Entry,
-    #[prop_sync(set)]
+    #[prop_sync(set, get)]
     txt_file: gtk::Entry,
     stk_read_state: gtk::Stack,
+    stk_episode_edit: gtk::Stack,
+    btn_save_episode: gtk::Button,
 }
 
 impl SeriesActor {
     fn set_order_func(&self) {
-        if self.series.numbers_repeat_each_volume.unwrap_or(false) {
-            self.widgets.lst_episodes.set_sort_func(self.episode_sort_and_filter_data.gen_sort_func(|this, that| {
-                let volume_order = this.volume.cmp(&that.volume);
-                if volume_order != core::cmp::Ordering::Equal {
-                    return volume_order.reverse();
-                }
-                this.number.cmp(&that.number).reverse()
-            }));
-        } else {
-            self.widgets.lst_episodes.set_sort_func(self.episode_sort_and_filter_data.gen_sort_func(|this, that| {
-                this.number.cmp(&that.number).reverse()
-            }));
-        }
+        self.widgets.lst_episodes.set_sort_func(self.episode_sort_and_filter_data.gen_sort_func(|this, that| {
+            let volume_order = this.volume.cmp(&that.volume);
+            if volume_order != core::cmp::Ordering::Equal {
+                return volume_order.reverse();
+            }
+            this.number.cmp(&that.number).reverse()
+        }));
+    }
+}
+
+impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
+    type Result = actix::ResponseActFuture<Self, anyhow::Result<()>>;
+
+    fn handle(&mut self, msg: crate::util::edit_mode::InitiateSave<i64>, _ctx: &mut Self::Context) -> Self::Result {
+        let episode_id = msg.0;
+        let episode = &self.episodes[&episode_id];
+        let EpisodeWidgetsPropGetter {
+            txt_volume,
+            txt_chapter,
+            txt_name,
+            txt_file,
+        } = episode.widgets.get_props();
+
+        Box::pin(async move {
+            let query = sqlx::query(r#"
+                UPDATE episodes
+                SET volume = ?
+                  , number = ?
+                  , name = ?
+                  , file = ?
+                WHERE id == ?
+            "#)
+                .bind(if txt_volume == "" {
+                    None
+                } else {
+                    Some(txt_volume.parse::<i64>()?)
+                })
+                .bind(txt_chapter.parse::<i64>()?)
+                .bind(txt_name)
+                .bind(txt_file)
+                .bind(episode_id);
+            let mut con = db::request_connection().await?;
+            query.execute(&mut con).await?;
+            Ok(())
+        }.into_actor(self))
     }
 }

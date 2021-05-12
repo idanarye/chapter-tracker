@@ -9,7 +9,7 @@ pub struct EditMode {
 }
 
 impl EditMode {
-    pub fn with_edit_widget<W, T>(mut self, widget: W, widget_update_signal: &str, saved_value: T) -> Self
+    pub fn with_edit_widget<W, T>(mut self, widget: W, widget_update_signal: &str, saved_value: T, validate: impl Fn(&T) -> Result<(), String> + 'static) -> Self
     where
         W: glib::ObjectExt,
         W: glib::IsA<gtk::Widget>,
@@ -21,16 +21,28 @@ impl EditMode {
         let signal_handler_id = widget.connect_local(widget_update_signal, false, move |args| {
             let widget: W = args[0].get().unwrap().unwrap();
             let style_context = widget.get_style_context();
-            if widget.get_value() == saved_value {
+            let value = widget.get_value();
+            if value == saved_value {
                 style_context.remove_class("unsaved-change");
             } else {
                 style_context.add_class("unsaved-change");
             }
+            if let Err(err) = validate(&value) {
+                widget.set_tooltip_text(Some(&err));
+                style_context.add_class("bad-input");
+            } else {
+                widget.set_tooltip_text(None);
+                style_context.remove_class("bad-input");
+            }
             None
         }).unwrap();
         widget.set_editability(true);
+        widget.get_style_context().add_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
-            widget.get_style_context().remove_class("unsaved-change");
+            let style_context = widget.get_style_context();
+            style_context.remove_class("being-edited");
+            style_context.remove_class("unsaved-change");
+            style_context.remove_class("bad-input");
             widget.set_editability(false);
             widget.disconnect(signal_handler_id);
         }));
@@ -99,7 +111,7 @@ impl WidgetForEditMode<i64> for gtk::ComboBox {
     }
 }
 
-pub struct InitiateSave<T = ()>(T);
+pub struct InitiateSave<T = ()>(pub T);
 
 impl<T> actix::Message for InitiateSave<T> {
     type Result = anyhow::Result<()>;

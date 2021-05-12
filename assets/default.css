@@ -12,7 +12,17 @@
     background-color: lightgreen;
 }
 
+.being-edited, .being-edited entry {
+    background-image: none;
+    background-color: lightgreen;
+}
+
 .unsaved-change, .unsaved-change entry {
     background-image: none;
     background-color: yellow;
+}
+
+.bad-input, .bad-input entry {
+    background-image: none;
+    background-color: red;
 }

@@ -133,7 +133,7 @@
                                                     <property name="activatable">False</property>
                                                     <property name="selectable">False</property>
                                                     <child>
-                                                      <!-- n-columns=7 n-rows=1 -->
+                                                      <!-- n-columns=8 n-rows=1 -->
                                                       <object class="GtkGrid">
                                                         <property name="visible">True</property>
                                                         <property name="can-focus">False</property>
@@ -247,6 +247,40 @@
                                                           </object>
                                                           <packing>
                                                             <property name="left-attach">3</property>
+                                                            <property name="top-attach">0</property>
+                                                          </packing>
+                                                        </child>
+                                                        <child>
+                                                          <object class="GtkStack" id="stk_episode_edit">
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">False</property>
+                                                            <child>
+                                                            <object class="GtkButton">
+                                                            <property name="label" translatable="yes">Edit</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <signal name="clicked" handler="edit_episode" swapped="no"/>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="name">normal</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_save_episode">
+                                                            <property name="label" translatable="yes">Save</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="name">mid-edit</property>
+                                                            <property name="position">1</property>
+                                                            </packing>
+                                                            </child>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="left-attach">7</property>
                                                             <property name="top-attach">0</property>
                                                           </packing>
                                                         </child>
