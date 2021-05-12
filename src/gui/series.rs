@@ -384,8 +384,12 @@ struct EpisodeRow {
 
 impl EpisodeRow {
     fn update_widgets_from_data(&self) {
-        self.widgets.txt_name.set_text(&self.data.name);
-        self.widgets.txt_file.set_text(&self.data.file);
+        self.widgets.set_props(&EpisodeWidgetsPropSetter {
+            txt_name: &self.data.name,
+            txt_file: &self.data.file,
+            txt_volume: &self.data.volume.map(|v| v.to_string()).unwrap_or("".to_string()),
+            txt_chapter: &self.data.number.to_string(),
+        });
         self.widgets.stk_read_state.set_property(
             "visible-child-name",
             &if self.data.date_of_read.is_some() {
@@ -397,10 +401,16 @@ impl EpisodeRow {
     }
 }
 
-#[derive(woab::WidgetsFromBuilder)]
+#[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct EpisodeWidgets {
     row_episode: gtk::ListBoxRow,
+    #[prop_sync(set)]
+    txt_volume: gtk::Entry,
+    #[prop_sync(set)]
+    txt_chapter: gtk::Entry,
+    #[prop_sync(set)]
     txt_name: gtk::Entry,
+    #[prop_sync(set)]
     txt_file: gtk::Entry,
     stk_read_state: gtk::Stack,
 }

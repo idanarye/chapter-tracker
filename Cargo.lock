@@ -1839,7 +1839,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "woab"
 version = "0.4.0"
-source = "git+https://github.com/idanarye/woab.git?branch=proc-sync-macro#e9916a1cc463867a9a907601c91820c0422f1de3"
+source = "git+https://github.com/idanarye/woab.git?branch=proc-sync-macro#c4c5c44cce1286883d38c951e31261ad691f9581"
 dependencies = [
  "actix",
  "gio",
@@ -1856,7 +1856,7 @@ dependencies = [
 [[package]]
 name = "woab-macros"
 version = "0.4.0"
-source = "git+https://github.com/idanarye/woab.git?branch=proc-sync-macro#e9916a1cc463867a9a907601c91820c0422f1de3"
+source = "git+https://github.com/idanarye/woab.git?branch=proc-sync-macro#c4c5c44cce1286883d38c951e31261ad691f9581"
 dependencies = [
  "proc-macro2",
  "quote",
