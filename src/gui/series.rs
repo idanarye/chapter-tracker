@@ -7,7 +7,8 @@ use crate::models;
 use crate::util::db;
 use crate::util::TypedQuark;
 
-#[derive(typed_builder::TypedBuilder)]
+#[derive(typed_builder::TypedBuilder, woab::Removable)]
+#[removable(self.widgets.row_series)]
 pub struct SeriesActor {
     widgets: SeriesWidgets,
     factories: crate::gui::Factories,
@@ -129,6 +130,40 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                         futures::future::ready(())
                     })
                 );
+                None
+            }
+            "delete_series" => {
+                let dialog = gtk::MessageDialog::new::<gtk::ApplicationWindow>(
+                    None,
+                    gtk::DialogFlags::MODAL,
+                    gtk::MessageType::Warning,
+                    gtk::ButtonsType::YesNo,
+                    &format!("Are you sure you want to delete {:?}?", self.series.name),
+                );
+                let series_id = self.series.id;
+                let addr = ctx.address();
+                ctx.spawn(async move {
+                    let result = woab::run_dialog(
+                        &dialog,
+                        true,
+                    ).await;
+                    if result != gtk::ResponseType::Yes {
+                        return;
+                    }
+                    let query = sqlx::query(r#"
+                            DELETE FROM serieses WHERE id = ?;
+                            DELETE FROM episodes WHERE series = ?;
+                            DELETE FROM directories WHERE series = ?;
+                        "#)
+                        .bind(series_id)
+                        .bind(series_id)
+                        .bind(series_id);
+                    {
+                        let mut con = db::request_connection().await.unwrap();
+                        query.execute(&mut con).await.unwrap();
+                    }
+                    addr.send(woab::Remove).await.unwrap();
+                }.into_actor(self));
                 None
             }
             "open_download_command_directory_dialog" => {
@@ -320,6 +355,34 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                         futures::future::ready(())
                     })
                 );
+                None
+            }
+            "delete_episode" => {
+                let episode = &self.episodes[&episode_id];
+                let lst_episodes = self.widgets.lst_episodes.clone();
+                let row_episode = episode.widgets.row_episode.clone();
+                let dialog = gtk::MessageDialog::new::<gtk::ApplicationWindow>(
+                    None,
+                    gtk::DialogFlags::MODAL,
+                    gtk::MessageType::Warning,
+                    gtk::ButtonsType::YesNo,
+                    &format!("Are you sure you want to delete {:?}?", episode.data.name),
+                );
+                ctx.spawn(async move {
+                    let result = woab::run_dialog(
+                        &dialog,
+                        true,
+                    ).await;
+                    if result != gtk::ResponseType::Yes {
+                        return;
+                    }
+                    let query = sqlx::query(r#"
+                        DELETE FROM episodes WHERE id = ?;
+                    "#).bind(episode_id);
+                    let mut con = db::request_connection().await.unwrap();
+                    query.execute(&mut con).await.unwrap();
+                    lst_episodes.remove(&row_episode);
+                }.into_actor(self));
                 None
             }
             _ => msg.cant_handle()?,
