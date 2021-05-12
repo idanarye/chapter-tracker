@@ -3,6 +3,7 @@ use actix::prelude::*;
 mod msgs;
 mod main_app;
 mod series;
+mod directory;
 
 pub fn start_gui() -> anyhow::Result<()> {
     gtk::init()?;
@@ -31,6 +32,7 @@ pub struct FactoriesInner {
     pub app_main: woab::BuilderFactory,
     pub row_series: woab::BuilderFactory,
     pub row_episode: woab::BuilderFactory,
+    pub row_directory: woab::BuilderFactory,
 }
 
 type Factories = std::rc::Rc<FactoriesInner>;
