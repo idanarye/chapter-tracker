@@ -57,7 +57,7 @@
                         <property name="activatable">False</property>
                         <property name="selectable">False</property>
                         <child>
-                          <!-- n-columns=7 n-rows=2 -->
+                          <!-- n-columns=6 n-rows=2 -->
                           <object class="GtkGrid">
                             <property name="name">g</property>
                             <property name="visible">True</property>
@@ -133,7 +133,7 @@
                                                     <property name="activatable">False</property>
                                                     <property name="selectable">False</property>
                                                     <child>
-                                                      <!-- n-columns=9 n-rows=1 -->
+                                                      <!-- n-columns=8 n-rows=1 -->
                                                       <object class="GtkGrid">
                                                         <property name="visible">True</property>
                                                         <property name="can-focus">False</property>
@@ -255,6 +255,11 @@
                                                             <property name="visible">True</property>
                                                             <property name="can-focus">False</property>
                                                             <child>
+                                                            <!-- n-columns=2 n-rows=1 -->
+                                                            <object class="GtkGrid">
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">False</property>
+                                                            <child>
                                                             <object class="GtkButton">
                                                             <property name="label">gtk-edit</property>
                                                             <property name="visible">True</property>
@@ -263,6 +268,27 @@
                                                             <property name="use-stock">True</property>
                                                             <property name="always-show-image">True</property>
                                                             <signal name="clicked" handler="edit_episode" swapped="no"/>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">0</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton">
+                                                            <property name="label">gtk-delete</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            <signal name="clicked" handler="delete_episode" swapped="no"/>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">1</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
                                                             </object>
                                                             <packing>
                                                             <property name="name">normal</property>
@@ -310,21 +336,6 @@
                                                           </object>
                                                           <packing>
                                                             <property name="left-attach">7</property>
-                                                            <property name="top-attach">0</property>
-                                                          </packing>
-                                                        </child>
-                                                        <child>
-                                                          <object class="GtkButton">
-                                                            <property name="label">gtk-delete</property>
-                                                            <property name="visible">True</property>
-                                                            <property name="can-focus">True</property>
-                                                            <property name="receives-default">True</property>
-                                                            <property name="use-stock">True</property>
-                                                            <property name="always-show-image">True</property>
-                                                            <signal name="clicked" handler="delete_episode" swapped="no"/>
-                                                          </object>
-                                                          <packing>
-                                                            <property name="left-attach">8</property>
                                                             <property name="top-attach">0</property>
                                                           </packing>
                                                         </child>
@@ -554,7 +565,7 @@
                               <packing>
                                 <property name="left-attach">0</property>
                                 <property name="top-attach">1</property>
-                                <property name="width">7</property>
+                                <property name="width">6</property>
                               </packing>
                             </child>
                             <child>
@@ -603,14 +614,41 @@
                                 <property name="can-focus">False</property>
                                 <property name="interpolate-size">True</property>
                                 <child>
-                                  <object class="GtkButton">
-                                    <property name="label">gtk-edit</property>
+                                  <!-- n-columns=2 n-rows=1 -->
+                                  <object class="GtkGrid">
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <property name="use-stock">True</property>
-                                    <property name="always-show-image">True</property>
-                                    <signal name="clicked" handler="edit_series" swapped="no"/>
+                                    <property name="can-focus">False</property>
+                                    <child>
+                                      <object class="GtkButton">
+                                        <property name="label">gtk-edit</property>
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">True</property>
+                                        <property name="vexpand">True</property>
+                                        <property name="use-stock">True</property>
+                                        <property name="always-show-image">True</property>
+                                        <signal name="clicked" handler="edit_series" swapped="no"/>
+                                      </object>
+                                      <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton">
+                                        <property name="label">gtk-delete</property>
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">True</property>
+                                        <property name="use-stock">True</property>
+                                        <property name="always-show-image">True</property>
+                                        <signal name="clicked" handler="delete_series" swapped="no"/>
+                                      </object>
+                                      <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">0</property>
+                                      </packing>
+                                    </child>
                                   </object>
                                   <packing>
                                     <property name="name">normal</property>
@@ -659,21 +697,6 @@
                               </object>
                               <packing>
                                 <property name="left-attach">5</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton">
-                                <property name="label">gtk-delete</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="use-stock">True</property>
-                                <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="delete_series" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">6</property>
                                 <property name="top-attach">0</property>
                               </packing>
                             </child>
