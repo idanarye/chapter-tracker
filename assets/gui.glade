@@ -256,16 +256,23 @@
                                                             <property name="can-focus">False</property>
                                                             <child>
                                                             <object class="GtkButton">
-                                                            <property name="label" translatable="yes">Edit</property>
+                                                            <property name="label">gtk-edit</property>
                                                             <property name="visible">True</property>
                                                             <property name="can-focus">True</property>
                                                             <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
                                                             <signal name="clicked" handler="edit_episode" swapped="no"/>
                                                             </object>
                                                             <packing>
                                                             <property name="name">normal</property>
                                                             </packing>
                                                             </child>
+                                                            <child>
+                                                            <!-- n-columns=2 n-rows=1 -->
+                                                            <object class="GtkGrid">
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">False</property>
                                                             <child>
                                                             <object class="GtkButton" id="btn_save_episode">
                                                             <property name="label">gtk-save</property>
@@ -274,6 +281,26 @@
                                                             <property name="receives-default">True</property>
                                                             <property name="use-stock">True</property>
                                                             <property name="always-show-image">True</property>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">0</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_cancel_episode_edit">
+                                                            <property name="label">gtk-cancel</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">1</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
                                                             </object>
                                                             <packing>
                                                             <property name="name">mid-edit</property>
@@ -342,7 +369,7 @@
                                                     <property name="activatable">False</property>
                                                     <property name="selectable">False</property>
                                                     <child>
-                                                      <!-- n-columns=5 n-rows=1 -->
+                                                      <!-- n-columns=6 n-rows=1 -->
                                                       <object class="GtkGrid">
                                                         <property name="visible">True</property>
                                                         <property name="can-focus">False</property>
@@ -405,6 +432,95 @@
                                                           </object>
                                                           <packing>
                                                             <property name="left-attach">4</property>
+                                                            <property name="top-attach">0</property>
+                                                          </packing>
+                                                        </child>
+                                                        <child>
+                                                          <object class="GtkStack" id="stk_directory_buttons">
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">False</property>
+                                                            <child>
+                                                            <!-- n-columns=2 n-rows=1 -->
+                                                            <object class="GtkGrid">
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">False</property>
+                                                            <child>
+                                                            <object class="GtkButton">
+                                                            <property name="label">gtk-edit</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            <signal name="clicked" handler="edit_directory" swapped="no"/>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">0</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton">
+                                                            <property name="label">gtk-delete</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            <signal name="clicked" handler="delete_directory" swapped="no"/>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">1</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="name">normal</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <!-- n-columns=2 n-rows=1 -->
+                                                            <object class="GtkGrid">
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">False</property>
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_save_directory">
+                                                            <property name="label">gtk-save</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">0</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_cancel_directory_edit">
+                                                            <property name="label">gtk-cancel</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="left-attach">1</property>
+                                                            <property name="top-attach">0</property>
+                                                            </packing>
+                                                            </child>
+                                                            </object>
+                                                            <packing>
+                                                            <property name="name">mid-edit</property>
+                                                            <property name="position">1</property>
+                                                            </packing>
+                                                            </child>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="left-attach">5</property>
                                                             <property name="top-attach">0</property>
                                                           </packing>
                                                         </child>
@@ -501,13 +617,39 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="btn_save_series">
-                                    <property name="label">gtk-save</property>
+                                  <!-- n-columns=2 n-rows=1 -->
+                                  <object class="GtkGrid">
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <property name="use-stock">True</property>
-                                    <property name="always-show-image">True</property>
+                                    <property name="can-focus">False</property>
+                                    <child>
+                                      <object class="GtkButton" id="btn_save_series">
+                                        <property name="label">gtk-save</property>
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">True</property>
+                                        <property name="vexpand">True</property>
+                                        <property name="use-stock">True</property>
+                                        <property name="always-show-image">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="btn_cancel_series_edit">
+                                        <property name="label">gtk-cancel</property>
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">True</property>
+                                        <property name="use-stock">True</property>
+                                        <property name="always-show-image">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">0</property>
+                                      </packing>
+                                    </child>
                                   </object>
                                   <packing>
                                     <property name="name">mid-edit</property>

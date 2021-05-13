@@ -79,6 +79,7 @@ pub struct SeriesWidgets {
     lst_directories: gtk::ListBox,
     stk_series_edit: gtk::Stack,
     btn_save_series: gtk::Button,
+    btn_cancel_series_edit: gtk::Button,
 }
 
 impl actix::Handler<woab::Signal> for SeriesActor {
@@ -102,6 +103,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     crate::util::edit_mode::EditMode::builder()
                     .stack(self.widgets.stk_series_edit.clone())
                     .save_button(self.widgets.btn_save_series.clone())
+                    .cancel_button(self.widgets.btn_cancel_series_edit.clone())
                     .build()
                     .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.series.name.clone(), |_| Ok(()))
                     .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type, |_| Ok(()))
@@ -109,29 +111,36 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.series.download_command_dir.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
                     .edit_mode(ctx.address().recipient(), ())
                     .into_actor(self)
-                    .then(|_, actor, _| {
-                        let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?").bind(actor.series.id);
+                    .then(|user_saved, actor, _| {
+                        let series_id = actor.series.id;
                         async move {
-                            let mut con = db::request_connection().await.unwrap();
-                             query.fetch_one(&mut con).await.unwrap()
+                            if user_saved {
+                                let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?").bind(series_id);
+                                let mut con = db::request_connection().await.unwrap();
+                                Some(query.fetch_one(&mut con).await.unwrap())
+                            } else {
+                                None
+                            }
                         }.into_actor(actor)
                     })
                     .then(|result, actor, _| {
-                        actor.series = result;
-                        let models::Series {
-                            id: _,
-                            media_type,
-                            name,
-                            // numbers_repeat_each_volume: _,
-                            download_command_dir,
-                            download_command,
-                        } = &actor.series;
-                        actor.widgets.set_props(&SeriesWidgetsPropSetter {
-                            txt_series_name: name,
-                            cbo_series_media_type: &media_type.to_string(),
-                            txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
-                            txt_download_command_dir: download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
-                        });
+                        if let Some(result) = result {
+                            actor.series = result;
+                            let models::Series {
+                                id: _,
+                                media_type,
+                                name,
+                                // numbers_repeat_each_volume: _,
+                                download_command_dir,
+                                download_command,
+                            } = &actor.series;
+                            actor.widgets.set_props(&SeriesWidgetsPropSetter {
+                                txt_series_name: name,
+                                cbo_series_media_type: &media_type.to_string(),
+                                txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                                txt_download_command_dir: download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                            });
+                        }
                         futures::future::ready(())
                     })
                 );
@@ -319,6 +328,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     crate::util::edit_mode::EditMode::builder()
                     .stack(episode.widgets.stk_episode_edit.clone())
                     .save_button(episode.widgets.btn_save_episode.clone())
+                    .cancel_button(episode.widgets.btn_cancel_episode_edit.clone())
                     .build()
                     .with_edit_widget(episode.widgets.txt_volume.clone(), "changed", episode.data.volume.map(|s| s.to_string()).unwrap_or_else(|| "".to_owned()), |text| {
                         if text == "" {
@@ -534,6 +544,7 @@ struct EpisodeWidgets {
     stk_read_state: gtk::Stack,
     stk_episode_edit: gtk::Stack,
     btn_save_episode: gtk::Button,
+    btn_cancel_episode_edit: gtk::Button,
 }
 
 impl SeriesActor {
