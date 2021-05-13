@@ -13,7 +13,7 @@ use crate::gui::directory::{DirectoryActor, DirectoryWidgets};
 pub struct SeriesActor {
     widgets: SeriesWidgets,
     factories: crate::gui::Factories,
-    series: models::Series,
+    model: models::Series,
     series_read_stats: models::SeriesReadStats,
     #[builder(setter(skip), default)]
     episodes: HashMap<i64, EpisodeRow>,
@@ -57,7 +57,7 @@ impl actix::Actor for SeriesActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        self.update_widgets_from_data();
+        self.update_widgets_from_model();
         self.set_order_func();
     }
 }
@@ -105,14 +105,14 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     .save_button(self.widgets.btn_save_series.clone())
                     .cancel_button(self.widgets.btn_cancel_series_edit.clone())
                     .build()
-                    .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.series.name.clone(), |_| Ok(()))
-                    .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.series.media_type, |_| Ok(()))
-                    .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.series.download_command.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
-                    .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.series.download_command_dir.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
+                    .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.model.name.clone(), |_| Ok(()))
+                    .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.model.media_type, |_| Ok(()))
+                    .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.model.download_command.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
+                    .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.model.download_command_dir.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
                     .edit_mode(ctx.address().recipient(), ())
                     .into_actor(self)
                     .then(|user_saved, actor, _| {
-                        let series_id = actor.series.id;
+                        let series_id = actor.model.id;
                         async move {
                             if user_saved {
                                 let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?").bind(series_id);
@@ -125,21 +125,8 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     })
                     .then(|result, actor, _| {
                         if let Some(result) = result {
-                            actor.series = result;
-                            let models::Series {
-                                id: _,
-                                media_type,
-                                name,
-                                // numbers_repeat_each_volume: _,
-                                download_command_dir,
-                                download_command,
-                            } = &actor.series;
-                            actor.widgets.set_props(&SeriesWidgetsPropSetter {
-                                txt_series_name: name,
-                                cbo_series_media_type: &media_type.to_string(),
-                                txt_download_command: download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
-                                txt_download_command_dir: download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
-                            });
+                            actor.model = result;
+                            actor.update_widgets_from_model();
                         }
                         futures::future::ready(())
                     })
@@ -152,9 +139,9 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     gtk::DialogFlags::MODAL,
                     gtk::MessageType::Warning,
                     gtk::ButtonsType::YesNo,
-                    &format!("Are you sure you want to delete {:?}?", self.series.name),
+                    &format!("Are you sure you want to delete {:?}?", self.model.name),
                 );
-                let series_id = self.series.id;
+                let series_id = self.model.id;
                 let addr = ctx.address();
                 ctx.spawn(async move {
                     let result = woab::run_dialog(
@@ -260,7 +247,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
             .bind(cbo_series_media_type.parse::<i64>().unwrap())
             .bind(txt_download_command)
             .bind(txt_download_command_dir)
-            .bind(self.series.id);
+            .bind(self.model.id);
         Box::pin(async move {
             let mut con = db::request_connection().await?;
             query.execute(&mut con).await?;
@@ -274,10 +261,10 @@ impl actix::Handler<crate::gui::msgs::UpdateActorData<crate::util::db::FromRowWi
 
     fn handle(&mut self, data: crate::gui::msgs::UpdateActorData<crate::util::db::FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>, ctx: &mut Self::Context) -> Self::Result {
         let crate::gui::msgs::UpdateActorData(data) = data;
-        if data.data != self.series || data.extra != self.series_read_stats {
-            self.series = data.data;
+        if data.data != self.model || data.extra != self.series_read_stats {
+            self.model = data.data;
             self.series_read_stats = data.extra;
-            self.update_widgets_from_data();
+            self.update_widgets_from_model();
             if self.widgets.rvl_episodes.get_reveal_child() {
                 self.update_episodes(ctx, None);
             }
@@ -330,7 +317,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     .save_button(episode.widgets.btn_save_episode.clone())
                     .cancel_button(episode.widgets.btn_cancel_episode_edit.clone())
                     .build()
-                    .with_edit_widget(episode.widgets.txt_volume.clone(), "changed", episode.data.volume.map(|s| s.to_string()).unwrap_or_else(|| "".to_owned()), |text| {
+                    .with_edit_widget(episode.widgets.txt_volume.clone(), "changed", episode.model.volume.map(|s| s.to_string()).unwrap_or_else(|| "".to_owned()), |text| {
                         if text == "" {
                             return Ok(())
                         }
@@ -339,14 +326,14 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                             Err(err) => Err(err.to_string()),
                         }
                     })
-                    .with_edit_widget(episode.widgets.txt_chapter.clone(), "changed", episode.data.number.to_string(), |text| {
+                    .with_edit_widget(episode.widgets.txt_chapter.clone(), "changed", episode.model.number.to_string(), |text| {
                         match text.parse::<i64>() {
                             Ok(_) => Ok(()),
                             Err(err) => Err(err.to_string()),
                         }
                     })
-                    .with_edit_widget(episode.widgets.txt_name.clone(), "changed", episode.data.name.clone(), |_| Ok(()))
-                    .with_edit_widget(episode.widgets.txt_file.clone(), "changed", episode.data.file.clone(), |_| Ok(()))
+                    .with_edit_widget(episode.widgets.txt_name.clone(), "changed", episode.model.name.clone(), |_| Ok(()))
+                    .with_edit_widget(episode.widgets.txt_file.clone(), "changed", episode.model.file.clone(), |_| Ok(()))
                     .edit_mode(ctx.address().recipient(), episode_id)
                     .into_actor(self)
                     .then(move |_, actor, ctx| {
@@ -365,7 +352,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     gtk::DialogFlags::MODAL,
                     gtk::MessageType::Warning,
                     gtk::ButtonsType::YesNo,
-                    &format!("Are you sure you want to delete {:?}?", episode.data.name),
+                    &format!("Are you sure you want to delete {:?}?", episode.model.name),
                 );
                 ctx.spawn(async move {
                     let result = woab::run_dialog(
@@ -394,17 +381,17 @@ impl SeriesActor {
         self.series_sort_and_filter_data.set(&self.widgets.row_series, (
                 self.series_read_stats.num_episodes,
                 self.series_read_stats.num_unread,
-                &self.series,
+                &self.model,
         ).into());
         self.widgets.row_series.changed();
     }
 
-    fn update_widgets_from_data(&self) {
+    fn update_widgets_from_model(&self) {
         self.widgets.set_props(&SeriesWidgetsPropSetter {
-            txt_series_name: &self.series.name,
-            cbo_series_media_type: &self.series.media_type.to_string(),
-            txt_download_command: self.series.download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
-            txt_download_command_dir: self.series.download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
+            txt_series_name: &self.model.name,
+            cbo_series_media_type: &self.model.media_type.to_string(),
+            txt_download_command: self.model.download_command.as_ref().map(|s| s.as_str()).unwrap_or(""),
+            txt_download_command_dir: self.model.download_command_dir.as_ref().map(|s| s.as_str()).unwrap_or(""),
         });
         self.widgets.tgl_series_unread.set_label(&format!("{}/{}", self.series_read_stats.num_unread, self.series_read_stats.num_episodes));
     }
@@ -415,14 +402,14 @@ impl SeriesActor {
                          , COUNT(*) AS num_episodes
                     FROM episodes
                     WHERE series = ?
-                    "#).bind(self.series.id);
+                    "#).bind(self.model.id);
         ctx.spawn(async move {
             let mut con = db::request_connection().await.unwrap();
             query.fetch_one(&mut con).await.unwrap()
         }.into_actor(self)
         .then(move |result, actor, _ctx| {
             actor.series_read_stats = result;
-            actor.update_widgets_from_data();
+            actor.update_widgets_from_model();
             actor.update_sort_and_filter_data();
             futures::future::ready(())
         }));
@@ -432,9 +419,9 @@ impl SeriesActor {
         crate::actors::DbActor::from_registry().do_send(crate::msgs::RefreshList {
             orig_ids: self.episodes.keys().copied().collect(),
             query: if let Some(episode_id) = episode_id {
-                sqlx::query_as("SELECT * FROM episodes WHERE series = ? and id = ?").bind(self.series.id).bind(episode_id)
+                sqlx::query_as("SELECT * FROM episodes WHERE series = ? and id = ?").bind(self.model.id).bind(episode_id)
             } else {
-                sqlx::query_as("SELECT * FROM episodes WHERE series = ?").bind(self.series.id)
+                sqlx::query_as("SELECT * FROM episodes WHERE series = ?").bind(self.model.id)
             },
             id_dlg: |row_data: &models::Episode| -> i64 {
                 row_data.id
@@ -446,7 +433,7 @@ impl SeriesActor {
     fn update_directories(&mut self, ctx: &mut actix::Context<Self>) {
         crate::actors::DbActor::from_registry().do_send(crate::msgs::RefreshList {
             orig_ids: self.episodes.keys().copied().collect(),
-            query: sqlx::query_as("SELECT * FROM directories WHERE series = ?").bind(self.series.id),
+            query: sqlx::query_as("SELECT * FROM directories WHERE series = ?").bind(self.model.id),
             id_dlg: |directory_data: &models::Directory| -> i64 {
                 directory_data.id
             },
@@ -463,18 +450,18 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesA
         match self.episodes.entry(data.id) {
             hashbrown::hash_map::Entry::Occupied(mut entry) => {
                 let entry = entry.get_mut();
-                if entry.data != data {
-                    entry.data = data;
-                    self.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.data).into());
-                    entry.update_widgets_from_data();
+                if entry.model != data {
+                    entry.model = data;
+                    self.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.model).into());
+                    entry.update_widgets_from_model();
                     entry.widgets.row_episode.changed();
                 }
             }
             hashbrown::hash_map::Entry::Vacant(entry) => {
                 let widgets: EpisodeWidgets = self.factories.row_episode.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
                 self.episode_sort_and_filter_data.set(&widgets.row_episode, (&data).into());
-                let entry = entry.insert(EpisodeRow { data, widgets });
-                entry.update_widgets_from_data();
+                let entry = entry.insert(EpisodeRow { model: data, widgets });
+                entry.update_widgets_from_model();
                 self.widgets.lst_episodes.add(&entry.widgets.row_episode);
             }
         }
@@ -496,7 +483,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
                 self.widgets.lst_directories.add(&widgets.row_directory);
                 let addr = DirectoryActor::builder()
                     .widgets(widgets)
-                    .directory(msg.0)
+                    .model(msg.0)
                     .build()
                     .start();
                 entry.insert(addr.clone());
@@ -507,21 +494,21 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
 }
 
 struct EpisodeRow {
-    data: models::Episode,
+    model: models::Episode,
     widgets: EpisodeWidgets,
 }
 
 impl EpisodeRow {
-    fn update_widgets_from_data(&self) {
+    fn update_widgets_from_model(&self) {
         self.widgets.set_props(&EpisodeWidgetsPropSetter {
-            txt_name: &self.data.name,
-            txt_file: &self.data.file,
-            txt_volume: &self.data.volume.map(|v| v.to_string()).unwrap_or_else(|| "".to_owned()),
-            txt_chapter: &self.data.number.to_string(),
+            txt_name: &self.model.name,
+            txt_file: &self.model.file,
+            txt_volume: &self.model.volume.map(|v| v.to_string()).unwrap_or_else(|| "".to_owned()),
+            txt_chapter: &self.model.number.to_string(),
         });
         self.widgets.stk_read_state.set_property(
             "visible-child-name",
-            &if self.data.date_of_read.is_some() {
+            &if self.model.date_of_read.is_some() {
                 "episode-is-read"
             } else {
                 "episode-is-not-read"

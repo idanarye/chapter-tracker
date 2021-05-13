@@ -201,7 +201,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<crate::model
                 let addr = SeriesActor::builder()
                     .widgets(widgets)
                     .factories(self.factories.clone())
-                    .series(data.data)
+                    .model(data.data)
                     .series_read_stats(data.extra)
                     .series_sort_and_filter_data(self.series_sort_and_filter_data)
                     .build()
