@@ -65,8 +65,30 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                     .cancel_button(self.widgets.btn_cancel_directory_edit.clone())
                     .build()
                     // .with_edit_widget(self
-                    .with_edit_widget(self.widgets.txt_directory_pattern.clone(), "changed", self.model.pattern.clone(), |_| Ok(()))
-                    .with_edit_widget(self.widgets.txt_directory_dir.clone(), "changed", self.model.dir.clone(), |_| Ok(()))
+                    .with_edit_widget(self.widgets.txt_directory_pattern.clone(), "changed", self.model.pattern.clone(), |pattern| {
+                        if pattern.is_empty() {
+                            Err("pattern must not be empty".to_owned())
+                        } else {
+                            let regex = regex::Regex::new(pattern).map_err(|e| e.to_string())?;
+                            let mut named_groups = regex.capture_names().filter_map(|c| c).collect::<Vec<_>>();
+                            named_groups.sort();
+                            if ["c", "v"].starts_with(&named_groups) {
+                                Ok(())
+                            } else {
+                                Err(format!(
+                                        r#"pattern must have no named capture groups, one capture group named "c", or two capture groups named "c" and "v". This one has {:?}"#,
+                                        named_groups,
+                                ))
+                            }
+                        }
+                    })
+                    .with_edit_widget(self.widgets.txt_directory_dir.clone(), "changed", self.model.dir.clone(), |dir| {
+                        if dir.is_empty() {
+                            Err("dir must not be empty".to_owned())
+                        } else {
+                            Ok(())
+                        }
+                    })
                     .with_edit_widget(self.widgets.txt_directory_volume.clone(), "changed", self.model.volume.map(|s| s.to_string()).unwrap_or_else(|| "".to_owned()), |text| {
                         if text == "" {
                             return Ok(())

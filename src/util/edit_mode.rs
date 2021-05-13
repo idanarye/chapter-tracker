@@ -9,6 +9,8 @@ pub struct EditMode {
     restoration_callbacks: Vec<Box<dyn FnOnce()>>,
     #[builder(default, setter(skip))]
     cancel_callbacks: Vec<Box<dyn FnOnce()>>,
+    #[builder(default, setter(skip))]
+    widgets: Vec<gtk::Widget>,
 }
 
 impl EditMode {
@@ -22,6 +24,7 @@ impl EditMode {
         T: Clone,
         T: 'static,
     {
+        self.widgets.push(widget.clone().upcast());
         self.cancel_callbacks.push({
             let widget = widget.clone();
             let saved_value = saved_value.clone();
@@ -29,6 +32,10 @@ impl EditMode {
                 widget.set_value(saved_value);
             })
         });
+        if let Err(err) = validate(&widget.get_value()) {
+            widget.set_tooltip_text(Some(&err));
+            widget.get_style_context().add_class("bad-input");
+        }
         let signal_handler_id = widget.connect_local(widget_update_signal, false, move |args| {
             let widget: W = args[0].get().unwrap().unwrap();
             let style_context = widget.get_style_context();
@@ -50,6 +57,7 @@ impl EditMode {
         widget.set_editability(true);
         widget.get_style_context().add_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
+            widget.set_tooltip_text(None);
             let style_context = widget.get_style_context();
             style_context.remove_class("being-edited");
             style_context.remove_class("unsaved-change");
@@ -60,11 +68,17 @@ impl EditMode {
         self
     }
 
-    pub async fn edit_mode<T: Send + Clone + 'static>(self, save_handler: actix::Recipient<InitiateSave<T>>, tag: T) -> bool {
+    pub async fn edit_mode<T: Send + Clone + 'static>(mut self, save_handler: actix::Recipient<InitiateSave<T>>, tag: T) -> bool {
         self.stack.set_property("visible-child-name", &"mid-edit").unwrap();
         let result = {
+            let widgets = core::mem::replace(&mut self.widgets, Default::default());
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
                 self.save_button.connect_clicked(move |_| {
+                    for widget in widgets.iter() {
+                        if widget.get_style_context().has_class("bad-input") {
+                            return;
+                        }
+                    }
                     let save_handler = save_handler.clone();
                     let tx = tx.clone();
                     let tag = tag.clone();
