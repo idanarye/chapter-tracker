@@ -496,9 +496,9 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
                 self.widgets.lst_directories.add(&widgets.row_directory);
                 let addr = DirectoryActor::builder()
                     .widgets(widgets)
+                    .directory(msg.0)
                     .build()
                     .start();
-                addr.do_send(msg);
                 entry.insert(addr.clone());
                 bld.connect_to(addr);
             }

@@ -154,6 +154,20 @@ impl WidgetForEditMode<i64> for gtk::ComboBox {
     }
 }
 
+impl WidgetForEditMode<bool> for gtk::ToggleButton {
+    fn set_editability(&self, editability: bool) {
+        self.set_sensitive(editability);
+    }
+
+    fn get_value(&self) -> bool {
+        self.get_active()
+    }
+
+    fn set_value(&self, value: bool) {
+        self.set_active(value);
+    }
+}
+
 pub struct InitiateSave<T = ()>(pub T);
 
 impl<T> actix::Message for InitiateSave<T> {
