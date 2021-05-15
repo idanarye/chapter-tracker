@@ -35,3 +35,8 @@ def add_migration(ctx, name):
 @task(alias='init')
 def reset_db(ctx):
     local['cp']['chapter_tracker.db3.old']['chapter_tracker.db3'] & BANG
+
+
+@task
+def install(ctx):
+    local['./install-script.sh'] & TERMINAL_PANEL
