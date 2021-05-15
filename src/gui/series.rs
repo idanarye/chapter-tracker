@@ -7,12 +7,14 @@ use crate::models;
 use crate::util::db;
 use crate::util::TypedQuark;
 use crate::gui::directory::{DirectoryActor, DirectoryWidgets};
+use crate::util::edit_mode::EditMode;
 
 #[derive(typed_builder::TypedBuilder, woab::Removable)]
 #[removable(self.widgets.row_series)]
 pub struct SeriesActor {
     widgets: SeriesWidgets,
     factories: crate::gui::Factories,
+    main_app: actix::Addr<crate::gui::main_app::MainAppActor>,
     model: models::Series,
     series_read_stats: models::SeriesReadStats,
     #[builder(setter(skip), default)]
@@ -80,6 +82,7 @@ pub struct SeriesWidgets {
     stk_series_edit: gtk::Stack,
     btn_save_series: gtk::Button,
     btn_cancel_series_edit: gtk::Button,
+    btn_save_new_series: gtk::Button,
 }
 
 impl actix::Handler<woab::Signal> for SeriesActor {
@@ -88,6 +91,9 @@ impl actix::Handler<woab::Signal> for SeriesActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "toggle_episodes" => {
+                if self.model.id < 0 {
+                    return Ok(None);
+                }
                 let toggle_button: gtk::ToggleButton = msg.param(0)?;
                 if toggle_button.get_active() {
                     self.update_episodes(ctx, None);
@@ -100,15 +106,13 @@ impl actix::Handler<woab::Signal> for SeriesActor {
             }
             "edit_series" => {
                 ctx.spawn(
-                    crate::util::edit_mode::EditMode::builder()
-                    .stack(self.widgets.stk_series_edit.clone())
-                    .save_button(self.widgets.btn_save_series.clone())
-                    .cancel_button(self.widgets.btn_cancel_series_edit.clone())
-                    .build()
-                    .with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.model.name.clone(), |_| Ok(()))
-                    .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.model.media_type, |_| Ok(()))
-                    .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.model.download_command.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
-                    .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.model.download_command_dir.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
+                    self.add_verifications_to_edit_mode(
+                        EditMode::builder()
+                        .stack(self.widgets.stk_series_edit.clone())
+                        .save_button(self.widgets.btn_save_series.clone())
+                        .cancel_button(self.widgets.btn_cancel_series_edit.clone())
+                        .build()
+                    )
                     .edit_mode(ctx.address().recipient(), ())
                     .into_actor(self)
                     .then(|user_saved, actor, _| {
@@ -236,23 +240,40 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
             txt_download_command,
             txt_download_command_dir,
         } = self.widgets.get_props();
-        let query = sqlx::query(r#"
-            UPDATE serieses
-            SET name = ?
-              , media_type = ?
-              , download_command = ?
-              , download_command_dir = ?
-            WHERE id == ?
-        "#)
-            .bind(txt_series_name)
-            .bind(cbo_series_media_type.parse::<i64>().unwrap())
-            .bind(txt_download_command)
-            .bind(txt_download_command_dir)
-            .bind(series_id);
         Box::pin(async move {
-            let mut con = db::request_connection().await?;
-            query.execute(&mut con).await?;
-            Ok(series_id)
+            if series_id < 0 {
+                let query = sqlx::query(r#"
+                    INSERT INTO serieses(name, media_type, download_command, download_command_dir)
+                    VALUES(?, ?, ?, ?)
+                "#)
+                    .bind(txt_series_name)
+                    .bind(cbo_series_media_type.parse::<i64>().unwrap())
+                    .bind(txt_download_command)
+                    .bind(txt_download_command_dir);
+                let mut con = db::request_connection().await?;
+                let query_result = query.execute(&mut con).await?;
+                Ok(query_result.last_insert_rowid())
+            } else {
+                let query = sqlx::query(r#"
+                    UPDATE serieses
+                    SET name = ?
+                      , media_type = ?
+                      , download_command = ?
+                      , download_command_dir = ?
+                    WHERE id == ?
+                "#)
+                    .bind(txt_series_name)
+                    .bind(cbo_series_media_type.parse::<i64>().unwrap())
+                    .bind(txt_download_command)
+                    .bind(txt_download_command_dir)
+                    .bind(series_id);
+                let mut con = db::request_connection().await?;
+                let query_result = query.execute(&mut con).await?;
+                if query_result.rows_affected() == 0 {
+                    anyhow::bail!("Affected 0 serieses with id={}", series_id);
+                }
+                Ok(series_id)
+            }
         }.into_actor(self))
     }
 }
@@ -313,7 +334,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
             "edit_episode" => {
                 let episode = &self.episodes[&episode_id];
                 ctx.spawn(
-                    crate::util::edit_mode::EditMode::builder()
+                    EditMode::builder()
                     .stack(episode.widgets.stk_episode_edit.clone())
                     .save_button(episode.widgets.btn_save_episode.clone())
                     .cancel_button(episode.widgets.btn_cancel_episode_edit.clone())
@@ -469,6 +490,25 @@ impl SeriesActor {
         addr.do_send(crate::gui::msgs::InitiateNewRowSequence);
         bld.connect_to(addr);
     }
+
+    fn add_verifications_to_edit_mode(&self, edit_mode: EditMode) -> EditMode {
+        edit_mode.with_edit_widget(self.widgets.txt_series_name.clone(), "changed", self.model.name.clone(), |name| {
+            if name.is_empty() {
+                Err("name must not be empty".to_owned())
+            } else {
+                Ok(())
+            }
+        })
+        .with_edit_widget(self.widgets.cbo_series_media_type.clone(), "changed", self.model.media_type, |media_type| {
+            if media_type < &0 {
+                Err("media type must not be empty".to_owned())
+            } else {
+                Ok(())
+            }
+        })
+        .with_edit_widget(self.widgets.txt_download_command.clone(), "changed", self.model.download_command.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
+        .with_edit_widget(self.widgets.txt_download_command_dir.clone(), "changed", self.model.download_command_dir.clone().unwrap_or_else(|| "".to_owned()), |_| Ok(()))
+    }
 }
 
 impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesActor {
@@ -520,6 +560,46 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
                 bld.connect_to(addr);
             }
         }
+    }
+}
+
+impl actix::Handler<crate::gui::msgs::InitiateNewRowSequence> for SeriesActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: crate::gui::msgs::InitiateNewRowSequence, ctx: &mut Self::Context) -> Self::Result {
+        ctx.spawn(
+            self.add_verifications_to_edit_mode(
+                EditMode::builder()
+                .stack(self.widgets.stk_series_edit.clone())
+                .stack_page("new")
+                .save_button(self.widgets.btn_save_new_series.clone())
+                .build()
+            )
+            .edit_mode(ctx.address().recipient(), ())
+            .into_actor(self)
+            .then(move |user_saved, actor, _| {
+                async move {
+                    if let Some(directory_id) = user_saved {
+                        let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?").bind(directory_id);
+                        let mut con = db::request_connection().await.unwrap();
+                        Some(query.fetch_one(&mut con).await.unwrap())
+                    } else {
+                        None
+                    }
+                }.into_actor(actor)
+            })
+        .then(|result, actor, ctx| {
+            if let Some(result) = result {
+                actor.model = result;
+                actor.update_widgets_from_model();
+                actor.main_app.do_send(crate::gui::msgs::RegisterActorAfterNew {
+                    id: actor.model.id,
+                    addr: ctx.address(),
+                });
+            }
+            futures::future::ready(())
+        })
+        );
     }
 }
 
@@ -603,7 +683,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
                 } else {
                     Some(txt_volume.parse::<i64>()?)
                 })
-                .bind(txt_chapter.parse::<i64>()?)
+            .bind(txt_chapter.parse::<i64>()?)
                 .bind(txt_name)
                 .bind(txt_file)
                 .bind(episode_id);

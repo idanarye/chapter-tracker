@@ -200,7 +200,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
                         Some(txt_directory_volume.parse::<i64>()?)
                     })
                     .bind(chk_directory_recursive);
-                let mut con = db::request_connection().await.unwrap();
+                let mut con = db::request_connection().await?;
                 let query_result = query.execute(&mut con).await?;
                 Ok(query_result.last_insert_rowid())
             } else {
@@ -221,7 +221,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
                     })
                     .bind(chk_directory_recursive)
                     .bind(directory_id);
-                let mut con = db::request_connection().await.unwrap();
+                let mut con = db::request_connection().await?;
                 let query_result = query.execute(&mut con).await?;
                 if query_result.rows_affected() == 0 {
                     anyhow::bail!("Affected 0 directories with id={}", directory_id);

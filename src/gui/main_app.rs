@@ -8,6 +8,7 @@ use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
 use crate::util::db::{stream_query, FromRowWithExtra};
 use crate::util::TypedQuark;
+use crate::models;
 
 #[derive(typed_builder::TypedBuilder)]
 pub struct MainAppActor {
@@ -80,6 +81,42 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 }));
                 None
             }
+            "new_series" => {
+                let bld = self.factories.row_series.instantiate();
+                let widgets: SeriesWidgets = bld.widgets().unwrap();
+                widgets.cbo_series_media_type.set_model(Some(&self.widgets.lsm_media_types));
+                self.widgets.lst_serieses.add(&widgets.row_series);
+                let data = models::Series {
+                    id: -1,
+                    media_type: 0,
+                    name: "".to_owned(),
+                    download_command_dir: None,
+                    download_command: None,
+                };
+                self.series_sort_and_filter_data.set(&widgets.row_series, (0, 0, &data).into());
+                let addr = SeriesActor::builder()
+                    .widgets(widgets)
+                    .factories(self.factories.clone())
+                    .main_app(ctx.address())
+                    .model(data)
+                    .series_read_stats(models::SeriesReadStats {
+                        num_episodes: 0,
+                        num_unread: 0,
+                    })
+                    .series_sort_and_filter_data(self.series_sort_and_filter_data)
+                    .build()
+                    .start();
+                addr.do_send(crate::gui::msgs::InitiateNewRowSequence);
+                bld.connect_to(addr);
+                let lst_serieses = self.widgets.lst_serieses.clone();
+                ctx.spawn(async move {
+                    actix::clock::sleep(core::time::Duration::from_nanos(100_000_000)).await;
+                    if let Some(adjustment) = lst_serieses.get_adjustment() {
+                        adjustment.set_value(adjustment.get_upper());
+                    }
+                }.into_actor(self));
+                None
+            }
             "close" => {
                 gtk::main_quit();
                 None
@@ -137,7 +174,7 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
 
     fn handle(&mut self, _: gui::msgs::UpdateMediaTypesList, _ctx: &mut Self::Context) -> Self::Result {
         Box::pin(
-            stream_query::<crate::models::MediaType>(sqlx::query_as("SELECT * FROM media_types"))
+            stream_query::<models::MediaType>(sqlx::query_as("SELECT * FROM media_types"))
             .into_actor(self)
             .map(|media_type, actor, _ctx| {
                 let media_type = media_type.unwrap();
@@ -168,7 +205,7 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                     GROUP BY serieses.id
                     ORDER BY serieses.id
                 "#),
-                id_dlg: |row_data: &FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>| -> i64 {
+                id_dlg: |row_data: &FromRowWithExtra<models::Series, models::SeriesReadStats>| -> i64 {
                     row_data.data.id
                 },
                 addr: ctx.address(),
@@ -183,10 +220,10 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
     }
 }
 
-impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>> for MainAppActor {
+impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<models::Series, models::SeriesReadStats>>> for MainAppActor {
     type Result = ();
 
-    fn handle(&mut self, data: crate::msgs::UpdateListRowData<FromRowWithExtra<crate::models::Series, crate::models::SeriesReadStats>>, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, data: crate::msgs::UpdateListRowData<FromRowWithExtra<models::Series, models::SeriesReadStats>>, ctx: &mut Self::Context) -> Self::Result {
         let crate::msgs::UpdateListRowData(data) = data;
         match self.serieses.entry(data.data.id) {
             hashbrown::hash_map::Entry::Occupied(entry) => {
@@ -201,6 +238,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<crate::model
                 let addr = SeriesActor::builder()
                     .widgets(widgets)
                     .factories(self.factories.clone())
+                    .main_app(ctx.address())
                     .model(data.data)
                     .series_read_stats(data.extra)
                     .series_sort_and_filter_data(self.series_sort_and_filter_data)
@@ -210,5 +248,14 @@ impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<crate::model
                 bld.connect_to(addr);
             }
         }
+    }
+}
+
+impl actix::Handler<crate::gui::msgs::RegisterActorAfterNew<crate::gui::series::SeriesActor>> for MainAppActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: crate::gui::msgs::RegisterActorAfterNew<crate::gui::series::SeriesActor>, _ctx: &mut Self::Context) -> Self::Result {
+        let crate::gui::msgs::RegisterActorAfterNew { id, addr } = msg;
+        self.serieses.insert(id, addr);
     }
 }
