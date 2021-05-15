@@ -16,26 +16,26 @@ pub struct FoundFile {
 }
 
 pub async fn run_files_discovery(mut con: crate::SqlitePoolConnection) -> anyhow::Result<Vec<FoundFile>> {
-    let mut directories = HashMap::<String, Vec<models::Directory>>::new();
+    let mut directories = HashMap::<(String, bool), Vec<models::Directory>>::new();
     sqlx::query_as::<_, models::Directory>("SELECT id, series, replace(pattern, '(?<', '(?P<') AS pattern, dir, volume, recursive FROM directories").fetch(&mut con).try_for_each(|directory| {
-        if let Some(entry) = directories.get_mut(&directory.dir) {
+        if let Some(entry) = directories.get_mut(&(directory.dir.clone(), directory.recursive)) {
             entry.push(directory);
         } else {
-            directories.insert(directory.dir.clone(), vec![directory]);
+            directories.insert((directory.dir.clone(), directory.recursive), vec![directory]);
         }
         futures::future::ready(Ok(()))
     }).await?;
     let mut result = Vec::new();
-    for (path, directories) in directories {
+    for ((path, recursive), directories) in directories {
         if path.matches("BitTorrent").next().is_none() {
             continue;
         }
         log::trace!("{} has {} patterns", path, directories.len());
-        let new_files = discover_in_path(&mut con, &path).await?;
+        let new_files = discover_in_path(&mut con, &path, recursive).await?;
         if new_files.is_empty() {
             continue;
         }
-        log::info!("Found new files: {:#?}", new_files);
+        log::debug!("Found new files for {:?} (recursive = {}): {:#?}", path, recursive, new_files);
 
         let regex_set = regex::RegexSet::new(directories.iter().map(|d| d.pattern.as_str()))?;
 
@@ -108,24 +108,34 @@ pub fn process_file_match(filename: &str, pattern: &regex::Regex) -> anyhow::Res
     }))
 }
 
-pub async fn discover_in_path(con: &mut crate::SqlitePoolConnection, path: &str) -> anyhow::Result<Vec<String>> {
-    let mut read_dir_result = match fs::read_dir(path).await {
-        Ok(ok) => ReadDirStream::new(ok),
-        Err(err) => {
-            if matches!(err.kind(), std::io::ErrorKind::NotFound) {
-                log::debug!("{} does not exist - skipping", path);
-                return Ok(Vec::new());
-            } else {
-                return Err(err.into());
-            }
-
-        },
-    };
+pub async fn discover_in_path(con: &mut crate::SqlitePoolConnection, path: &str, recursive: bool) -> anyhow::Result<Vec<String>> {
     let mut tx = con.begin().await?;
     sqlx::query("CREATE TEMP TABLE discovered_files(filename text)").execute(&mut tx).await?;
-    while let Some(dir_entry) = read_dir_result.try_next().await? {
-        let file_path = dir_entry.path().to_string_lossy().to_string();
-        sqlx::query("INSERT INTO discovered_files(filename) VALUES(?)").bind(file_path).execute(&mut tx).await?;
+    let mut search_in = vec![path.to_owned()];
+    while let Some(path) = search_in.pop() {
+        let mut read_dir_result = match fs::read_dir(&path).await {
+            Ok(ok) => ReadDirStream::new(ok),
+            Err(err) => {
+                if matches!(err.kind(), std::io::ErrorKind::NotFound) {
+                    log::debug!("{} does not exist - skipping", path);
+                    return Ok(Vec::new());
+                } else {
+                    return Err(err.into());
+                }
+
+            },
+        };
+        while let Some(dir_entry) = read_dir_result.try_next().await? {
+            let file_path = dir_entry.path().to_string_lossy().to_string();
+            if recursive {
+                let file_type = dir_entry.file_type().await?;
+                if file_type.is_dir() {
+                    search_in.push(file_path);
+                    continue;
+                }
+            }
+            sqlx::query("INSERT INTO discovered_files(filename) VALUES(?)").bind(file_path).execute(&mut tx).await?;
+        }
     }
     let new_files: Vec<String> = sqlx::query_as::<_, (String,)>(r#"
         SELECT discovered_files.filename
