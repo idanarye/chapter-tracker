@@ -9,3 +9,17 @@ pub struct UpdateSeriesesList;
 #[derive(actix::Message)]
 #[rtype(result="()")]
 pub struct UpdateActorData<T>(pub T);
+
+#[derive(actix::Message)]
+#[rtype(result="()")]
+pub struct RegisterActorAfterNew<A>
+where
+    A: actix::Actor,
+{
+    pub id: i64,
+    pub addr: actix::Addr<A>,
+}
+
+#[derive(actix::Message)]
+#[rtype(result="()")]
+pub struct InitiateNewRowSequence;

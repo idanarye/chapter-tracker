@@ -114,7 +114,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     .then(|user_saved, actor, _| {
                         let series_id = actor.model.id;
                         async move {
-                            if user_saved {
+                            if user_saved.is_some() {
                                 let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?").bind(series_id);
                                 let mut con = db::request_connection().await.unwrap();
                                 Some(query.fetch_one(&mut con).await.unwrap())
@@ -226,9 +226,10 @@ impl actix::Handler<woab::Signal> for SeriesActor {
 }
 
 impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
-    type Result = actix::ResponseActFuture<Self, anyhow::Result<()>>;
+    type Result = actix::ResponseActFuture<Self, anyhow::Result<i64>>;
 
     fn handle(&mut self, _msg: crate::util::edit_mode::InitiateSave, _ctx: &mut Self::Context) -> Self::Result {
+        let series_id = self.model.id;
         let SeriesWidgetsPropGetter {
             txt_series_name,
             cbo_series_media_type,
@@ -247,11 +248,11 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
             .bind(cbo_series_media_type.parse::<i64>().unwrap())
             .bind(txt_download_command)
             .bind(txt_download_command_dir)
-            .bind(self.model.id);
+            .bind(series_id);
         Box::pin(async move {
             let mut con = db::request_connection().await?;
             query.execute(&mut con).await?;
-            Ok(())
+            Ok(series_id)
         }.into_actor(self))
     }
 }
@@ -431,14 +432,42 @@ impl SeriesActor {
     }
 
     fn update_directories(&mut self, ctx: &mut actix::Context<Self>) {
-        crate::actors::DbActor::from_registry().do_send(crate::msgs::RefreshList {
-            orig_ids: self.episodes.keys().copied().collect(),
-            query: sqlx::query_as("SELECT * FROM directories WHERE series = ?").bind(self.model.id),
-            id_dlg: |directory_data: &models::Directory| -> i64 {
-                directory_data.id
-            },
-            addr: ctx.address(),
-        });
+        ctx.spawn(
+            crate::actors::DbActor::from_registry().send(crate::msgs::RefreshList {
+                orig_ids: self.episodes.keys().copied().collect(),
+                query: sqlx::query_as("SELECT * FROM directories WHERE series = ?").bind(self.model.id),
+                id_dlg: |directory_data: &models::Directory| -> i64 {
+                    directory_data.id
+                },
+                addr: ctx.address(),
+            })
+            .into_actor(self)
+            .then(|_, actor, ctx| {
+                actor.add_row_for_new_directory(ctx);
+                futures::future::ready(())
+            })
+        );
+    }
+
+    fn add_row_for_new_directory(&mut self, ctx: &mut actix::Context<Self>) {
+        let bld = self.factories.row_directory.instantiate();
+        let widgets: DirectoryWidgets = bld.widgets().unwrap();
+        self.widgets.lst_directories.add(&widgets.row_directory);
+        let addr = DirectoryActor::builder()
+            .widgets(widgets)
+            .model(models::Directory {
+                id: -1,
+                series: self.model.id,
+                pattern: "".to_owned(),
+                dir: "".to_owned(),
+                volume: None,
+                recursive: false,
+            })
+            .series(ctx.address())
+            .build()
+            .start();
+        addr.do_send(crate::gui::msgs::InitiateNewRowSequence);
+        bld.connect_to(addr);
     }
 }
 
@@ -471,7 +500,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesA
 impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for SeriesActor {
     type Result = ();
 
-    fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::Directory>, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::Directory>, ctx: &mut Self::Context) -> Self::Result {
         match self.directories.entry(msg.0.id) {
             hashbrown::hash_map::Entry::Occupied(mut entry) => {
                 let addr = entry.get_mut();
@@ -484,6 +513,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
                 let addr = DirectoryActor::builder()
                     .widgets(widgets)
                     .model(msg.0)
+                    .series(ctx.address())
                     .build()
                     .start();
                 entry.insert(addr.clone());
@@ -547,7 +577,7 @@ impl SeriesActor {
 }
 
 impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
-    type Result = actix::ResponseActFuture<Self, anyhow::Result<()>>;
+    type Result = actix::ResponseActFuture<Self, anyhow::Result<i64>>;
 
     fn handle(&mut self, msg: crate::util::edit_mode::InitiateSave<i64>, _ctx: &mut Self::Context) -> Self::Result {
         let episode_id = msg.0;
@@ -579,7 +609,17 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
                 .bind(episode_id);
             let mut con = db::request_connection().await?;
             query.execute(&mut con).await?;
-            Ok(())
+            Ok(episode_id)
         }.into_actor(self))
+    }
+}
+
+impl actix::Handler<crate::gui::msgs::RegisterActorAfterNew<crate::gui::directory::DirectoryActor>> for SeriesActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: crate::gui::msgs::RegisterActorAfterNew<crate::gui::directory::DirectoryActor>, ctx: &mut Self::Context) -> Self::Result {
+        let crate::gui::msgs::RegisterActorAfterNew { id, addr } = msg;
+        self.directories.insert(id, addr);
+        self.add_row_for_new_directory(ctx);
     }
 }

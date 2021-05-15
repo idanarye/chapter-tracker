@@ -3,8 +3,11 @@ use gtk::prelude::*;
 #[derive(typed_builder::TypedBuilder)]
 pub struct EditMode {
     stack: gtk::Stack,
+    #[builder(default = "mid-edit")]
+    stack_page: &'static str,
     save_button: gtk::Button,
-    cancel_button: gtk::Button,
+    #[builder(default, setter(strip_option))]
+    cancel_button: Option<gtk::Button>,
     #[builder(default, setter(skip))]
     restoration_callbacks: Vec<Box<dyn FnOnce()>>,
     #[builder(default, setter(skip))]
@@ -68,8 +71,8 @@ impl EditMode {
         self
     }
 
-    pub async fn edit_mode<T: Send + Clone + 'static>(mut self, save_handler: actix::Recipient<InitiateSave<T>>, tag: T) -> bool {
-        self.stack.set_property("visible-child-name", &"mid-edit").unwrap();
+    pub async fn edit_mode<T: Send + Clone + 'static>(mut self, save_handler: actix::Recipient<InitiateSave<T>>, tag: T) -> Option<i64> {
+        self.stack.set_property("visible-child-name", &self.stack_page).unwrap();
         let result = {
             let widgets = core::mem::replace(&mut self.widgets, Default::default());
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
@@ -86,8 +89,8 @@ impl EditMode {
                         actix::spawn(async move {
                             let should_save = save_handler.send(InitiateSave(tag.clone())).await.unwrap();
                             match should_save {
-                                Ok(()) => {
-                                    let _ = tx.try_send(());
+                                Ok(rowid) => {
+                                    let _ = tx.try_send(rowid);
                                 }
                                 Err(err) => {
                                     log::error!("Cannot save: {}", err);
@@ -97,23 +100,27 @@ impl EditMode {
                     });
                 })
             });
-            let cancel_fut = woab::wake_from_signal(&self.cancel_button, |tx| {
-                self.cancel_button.connect_clicked(move |_| {
-                    let _ = tx.try_send(());
-                })
-            });
-            futures::pin_mut!(save_fut);
-            futures::pin_mut!(cancel_fut);
-            match futures::future::select(save_fut, cancel_fut).await {
-                futures::future::Either::Left(_) => true,
-                futures::future::Either::Right(_) => false,
+            if let Some(cancel_button) = &self.cancel_button {
+                let cancel_fut = woab::wake_from_signal(cancel_button, |tx| {
+                    cancel_button.connect_clicked(move |_| {
+                        let _ = tx.try_send(());
+                    })
+                });
+                futures::pin_mut!(save_fut);
+                futures::pin_mut!(cancel_fut);
+                match futures::future::select(save_fut, cancel_fut).await {
+                    futures::future::Either::Left(rowid) => Some(rowid.0.unwrap()),
+                    futures::future::Either::Right(_) => None,
+                }
+            } else {
+                Some(save_fut.await.unwrap())
             }
         };
         self.stack.set_property("visible-child-name", &"normal").unwrap();
         for callback in self.restoration_callbacks {
             callback();
         }
-        if !result {
+        if result.is_none() {
             for callback in self.cancel_callbacks {
                 callback();
             }
@@ -185,5 +192,5 @@ impl WidgetForEditMode<bool> for gtk::ToggleButton {
 pub struct InitiateSave<T = ()>(pub T);
 
 impl<T> actix::Message for InitiateSave<T> {
-    type Result = anyhow::Result<()>;
+    type Result = anyhow::Result<i64>;
 }
