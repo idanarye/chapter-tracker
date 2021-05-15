@@ -93,7 +93,19 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
         Ok(match msg.name() {
             "open_directory_dir_dialog" => {
                 if self.widgets.txt_directory_dir.get_editable() {
-                    ctx.spawn(crate::util::dialogs::run_set_directory_dialog(self.widgets.txt_directory_dir.clone()).into_actor(self));
+                    let txt_directory_dir = self.widgets.txt_directory_dir.clone();
+                    let series = self.series.clone();
+                    ctx.spawn(async move {
+                        let base_dir = series.send(crate::gui::msgs::GetBaseDirForMediaType).await.unwrap();
+                        let base_dir = match base_dir {
+                            Ok(base_dir) => Some(base_dir),
+                            Err(err) => {
+                                log::warn!("Cannot find base dir: {}", err);
+                                None
+                            }
+                        };
+                        crate::util::dialogs::run_set_directory_dialog(txt_directory_dir, base_dir).await;
+                    }.into_actor(self));
                 }
                 None
             }

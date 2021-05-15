@@ -178,7 +178,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 let icon_position: gtk::EntryIconPosition = msg.param(1)?;
                 match (self.widgets.txt_download_command_dir.get_editable(), icon_position) {
                     (true, gtk::EntryIconPosition::Primary) => {
-                        ctx.spawn(crate::util::dialogs::run_set_directory_dialog(self.widgets.txt_download_command_dir.clone()).into_actor(self));
+                        ctx.spawn(crate::util::dialogs::run_set_directory_dialog(self.widgets.txt_download_command_dir.clone(), None).into_actor(self));
                     }
                     (true, gtk::EntryIconPosition::Secondary) => {
                         self.widgets.txt_download_command_dir.set_text("");
@@ -600,6 +600,20 @@ impl actix::Handler<crate::gui::msgs::InitiateNewRowSequence> for SeriesActor {
             futures::future::ready(())
         })
         );
+    }
+}
+
+impl actix::Handler<crate::gui::msgs::GetBaseDirForMediaType> for SeriesActor {
+    type Result = actix::ResponseActFuture<Self, anyhow::Result<String>>;
+
+    fn handle(&mut self, _msg: crate::gui::msgs::GetBaseDirForMediaType, _ctx: &mut Self::Context) -> Self::Result {
+        let media_type = self.model.media_type;
+        Box::pin(async move {
+            let query = sqlx::query_as("SELECT base_dir FROM media_types WHERE id = ?").bind(media_type);
+            let mut con = db::request_connection().await?;
+            let (base_dir,) = query.fetch_one(&mut con).await?;
+            Ok(base_dir)
+        }.into_actor(self))
     }
 }
 

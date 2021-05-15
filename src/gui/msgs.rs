@@ -23,3 +23,7 @@ where
 #[derive(actix::Message)]
 #[rtype(result="()")]
 pub struct InitiateNewRowSequence;
+
+#[derive(actix::Message)]
+#[rtype(result="anyhow::Result<String>")]
+pub struct GetBaseDirForMediaType;
