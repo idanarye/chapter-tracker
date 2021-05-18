@@ -123,6 +123,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 let addr = MediaTypesActor::builder()
                     .factories(self.factories.clone())
                     .widgets(bld.widgets().unwrap())
+                    .main_app(ctx.address())
                     .build()
                     .start();
                 bld.connect_to(addr);
@@ -184,6 +185,7 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
     type Result = ResponseActFuture<Self, anyhow::Result<()>>;
 
     fn handle(&mut self, _: gui::msgs::UpdateMediaTypesList, _ctx: &mut Self::Context) -> Self::Result {
+        self.widgets.lsm_media_types.clear();
         Box::pin(
             stream_query::<models::MediaType>(sqlx::query_as("SELECT * FROM media_types"))
             .into_actor(self)

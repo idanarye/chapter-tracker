@@ -880,6 +880,8 @@
           <object class="GtkListBoxRow" id="row_media_type">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
+            <property name="activatable">False</property>
+            <property name="selectable">False</property>
             <child>
               <!-- n-columns=5 n-rows=1 -->
               <object class="GtkGrid">
