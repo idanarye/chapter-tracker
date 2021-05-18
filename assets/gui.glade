@@ -133,7 +133,7 @@
                                                     <property name="activatable">False</property>
                                                     <property name="selectable">False</property>
                                                     <child>
-                                                      <!-- n-columns=8 n-rows=1 -->
+                                                      <!-- n-columns=9 n-rows=1 -->
                                                       <object class="GtkGrid">
                                                         <property name="visible">True</property>
                                                         <property name="can-focus">False</property>
@@ -333,6 +333,21 @@
                                                             <property name="position">1</property>
                                                             </packing>
                                                             </child>
+                                                          </object>
+                                                          <packing>
+                                                            <property name="left-attach">8</property>
+                                                            <property name="top-attach">0</property>
+                                                          </packing>
+                                                        </child>
+                                                        <child>
+                                                          <object class="GtkButton">
+                                                            <property name="label">gtk-media-play</property>
+                                                            <property name="visible">True</property>
+                                                            <property name="can-focus">True</property>
+                                                            <property name="receives-default">True</property>
+                                                            <property name="use-stock">True</property>
+                                                            <property name="always-show-image">True</property>
+                                                            <signal name="clicked" handler="play_episode" swapped="no"/>
                                                           </object>
                                                           <packing>
                                                             <property name="left-attach">7</property>

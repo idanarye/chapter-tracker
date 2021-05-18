@@ -393,6 +393,30 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                 }.into_actor(self));
                 None
             }
+            "play_episode" => {
+                let series_id = self.model.id;
+                ctx.spawn(async move {
+                    let mut con = db::request_connection().await.unwrap();
+                    let (program,): (String,) = sqlx::query_as(r#"
+                        SELECT media_types.program
+                        FROM serieses
+                        INNER JOIN media_types ON serieses.media_type = media_types.id
+                        WHERE serieses.id = ?
+                    "#).bind(series_id).fetch_one(&mut con).await.unwrap();
+                    program
+                }.into_actor(self)
+                .then(move |program, actor, _ctx| {
+                    let file = &actor.episodes[&episode_id].model.file;
+                    match std::process::Command::new(&program).arg(file).spawn() {
+                        Ok(_) => (),
+                        Err(err) => {
+                            log::error!("Cannot play {:?} with {:?}: {}", file, program, err);
+                        }
+                    }
+                    futures::future::ready(())
+                }));
+                None
+            }
             _ => msg.cant_handle()?,
         })
     }
