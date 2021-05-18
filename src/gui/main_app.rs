@@ -6,6 +6,7 @@ use hashbrown::HashMap;
 
 use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
+use gui::media_types::MediaTypesActor;
 use crate::util::db::{stream_query, FromRowWithExtra};
 use crate::util::TypedQuark;
 use crate::models;
@@ -115,6 +116,16 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                         adjustment.set_value(adjustment.get_upper());
                     }
                 }.into_actor(self));
+                None
+            }
+            "open_media_types_window" => {
+                let bld = self.factories.win_media_types.instantiate();
+                let addr = MediaTypesActor::builder()
+                    .factories(self.factories.clone())
+                    .widgets(bld.widgets().unwrap())
+                    .build()
+                    .start();
+                bld.connect_to(addr);
                 None
             }
             "close" => {

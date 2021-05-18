@@ -4,6 +4,7 @@ mod msgs;
 mod main_app;
 mod series;
 mod directory;
+mod media_types;
 
 pub fn start_gui() -> anyhow::Result<()> {
     gtk::init()?;
@@ -33,6 +34,9 @@ pub struct FactoriesInner {
     pub row_series: woab::BuilderFactory,
     pub row_episode: woab::BuilderFactory,
     pub row_directory: woab::BuilderFactory,
+
+    pub win_media_types: woab::BuilderFactory,
+    pub row_media_type: woab::BuilderFactory,
 }
 
 type Factories = std::rc::Rc<FactoriesInner>;
