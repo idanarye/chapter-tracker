@@ -198,10 +198,10 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                 orig_ids: self.serieses.keys().copied().collect(),
                 query: sqlx::query_as(r#"
                     SELECT serieses.*
-                        , SUM(date_of_read IS NULL) AS num_unread
-                        , COUNT(*) AS num_episodes
+                        , SUM(episodes.id IS NOT NULL AND date_of_read IS NULL) AS num_unread
+                        , COUNT(episodes.id) AS num_episodes
                     FROM serieses
-                    INNER JOIN episodes ON serieses.id = episodes.series
+                    LEFT JOIN episodes ON serieses.id = episodes.series
                     GROUP BY serieses.id
                     ORDER BY serieses.id
                 "#),
