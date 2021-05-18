@@ -453,6 +453,10 @@ impl SeriesActor {
     }
 
     fn update_directories(&mut self, ctx: &mut actix::Context<Self>) {
+        let mut already_has_children = false;
+        self.widgets.lst_directories.foreach(|_| {
+            already_has_children = true;
+        });
         ctx.spawn(
             crate::actors::DbActor::from_registry().send(crate::msgs::RefreshList {
                 orig_ids: self.episodes.keys().copied().collect(),
@@ -463,8 +467,10 @@ impl SeriesActor {
                 addr: ctx.address(),
             })
             .into_actor(self)
-            .then(|_, actor, ctx| {
-                actor.add_row_for_new_directory(ctx);
+            .then(move |_, actor, ctx| {
+                if !already_has_children {
+                    actor.add_row_for_new_directory(ctx);
+                }
                 futures::future::ready(())
             })
         );
