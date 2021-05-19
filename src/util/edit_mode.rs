@@ -17,6 +17,10 @@ pub struct EditMode {
 }
 
 impl EditMode {
+    pub fn on_restore(mut self, callback: impl FnOnce() + 'static) -> Self {
+        self.restoration_callbacks.push(Box::new(callback));
+        self
+    }
     pub fn with_edit_widget<W, T>(mut self, widget: W, widget_update_signal: &str, saved_value: T, validate: impl Fn(&T) -> Result<(), String> + 'static) -> Self
     where
         W: glib::ObjectExt,

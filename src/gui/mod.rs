@@ -33,6 +33,7 @@ pub struct FactoriesInner {
     pub app_main: woab::BuilderFactory,
     pub row_series: woab::BuilderFactory,
     pub row_episode: woab::BuilderFactory,
+    #[factory(extra(lsm_directory_scan_preview, srt_directory_scan_preview))]
     pub row_directory: woab::BuilderFactory,
 
     pub win_media_types: woab::BuilderFactory,
