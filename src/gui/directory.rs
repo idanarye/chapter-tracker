@@ -219,11 +219,11 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
     }
 }
 
-impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for DirectoryActor {
+impl actix::Handler<crate::gui::msgs::UpdateModel<models::Directory>> for DirectoryActor {
     type Result = ();
 
-    fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::Directory>, _ctx: &mut Self::Context) -> Self::Result {
-        let crate::msgs::UpdateListRowData(data) = msg;
+    fn handle(&mut self, msg: crate::gui::msgs::UpdateModel<models::Directory>, _ctx: &mut Self::Context) -> Self::Result {
+        let crate::gui::msgs::UpdateModel(data) = msg;
         self.model = data;
         self.update_widgets_from_model();
     }

@@ -22,4 +22,4 @@ where
 
 #[derive(actix::Message)]
 #[rtype(result="()")]
-pub struct UpdateListRowData<T>(pub T);
+pub struct UpdateListRowData<T>(pub Vec<T>);

@@ -545,23 +545,24 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesA
     type Result = ();
 
     fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::Episode>, ctx: &mut Self::Context) -> Self::Result {
-        let crate::msgs::UpdateListRowData(data) = msg;
-        match self.episodes.entry(data.id) {
-            hashbrown::hash_map::Entry::Occupied(mut entry) => {
-                let entry = entry.get_mut();
-                if entry.model != data {
-                    entry.model = data;
-                    self.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.model).into());
-                    entry.update_widgets_from_model();
-                    entry.widgets.row_episode.changed();
+        for data in msg.0 {
+            match self.episodes.entry(data.id) {
+                hashbrown::hash_map::Entry::Occupied(mut entry) => {
+                    let entry = entry.get_mut();
+                    if entry.model != data {
+                        entry.model = data;
+                        self.episode_sort_and_filter_data.set(&entry.widgets.row_episode, (&entry.model).into());
+                        entry.update_widgets_from_model();
+                        entry.widgets.row_episode.changed();
+                    }
                 }
-            }
-            hashbrown::hash_map::Entry::Vacant(entry) => {
-                let widgets: EpisodeWidgets = self.factories.row_episode.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
-                self.episode_sort_and_filter_data.set(&widgets.row_episode, (&data).into());
-                let entry = entry.insert(EpisodeRow { model: data, widgets });
-                entry.update_widgets_from_model();
-                self.widgets.lst_episodes.add(&entry.widgets.row_episode);
+                hashbrown::hash_map::Entry::Vacant(entry) => {
+                    let widgets: EpisodeWidgets = self.factories.row_episode.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
+                    self.episode_sort_and_filter_data.set(&widgets.row_episode, (&data).into());
+                    let entry = entry.insert(EpisodeRow { model: data, widgets });
+                    entry.update_widgets_from_model();
+                    self.widgets.lst_episodes.add(&entry.widgets.row_episode);
+                }
             }
         }
     }
@@ -571,23 +572,25 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
     type Result = ();
 
     fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::Directory>, ctx: &mut Self::Context) -> Self::Result {
-        match self.directories.entry(msg.0.id) {
-            hashbrown::hash_map::Entry::Occupied(mut entry) => {
-                let addr = entry.get_mut();
-                addr.do_send(msg);
-            }
-            hashbrown::hash_map::Entry::Vacant(entry) => {
-                let bld = self.factories.row_directory.instantiate();
-                let widgets: DirectoryWidgets = bld.widgets().unwrap();
-                self.widgets.lst_directories.add(&widgets.row_directory);
-                let addr = DirectoryActor::builder()
-                    .widgets(widgets)
-                    .model(msg.0)
-                    .series(ctx.address())
-                    .build()
-                    .start();
-                entry.insert(addr.clone());
-                bld.connect_to(addr);
+        for data in msg.0 {
+            match self.directories.entry(data.id) {
+                hashbrown::hash_map::Entry::Occupied(mut entry) => {
+                    let addr = entry.get_mut();
+                    addr.do_send(crate::gui::msgs::UpdateModel(data));
+                }
+                hashbrown::hash_map::Entry::Vacant(entry) => {
+                    let bld = self.factories.row_directory.instantiate();
+                    let widgets: DirectoryWidgets = bld.widgets().unwrap();
+                    self.widgets.lst_directories.add(&widgets.row_directory);
+                    let addr = DirectoryActor::builder()
+                        .widgets(widgets)
+                        .model(data)
+                        .series(ctx.address())
+                        .build()
+                        .start();
+                    entry.insert(addr.clone());
+                    bld.connect_to(addr);
+                }
             }
         }
     }

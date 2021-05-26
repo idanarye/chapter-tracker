@@ -73,9 +73,9 @@ where
                 addr,
             } = msg;
             query.fetch(&mut con)
-                .filter_map(|row_data| {
+                .filter_map(|data| {
                     async move {
-                        match row_data {
+                        match data {
                             Ok(ok) => Some(ok),
                             Err(err) => {
                                 log::error!("Problem with episode: {}", err);
@@ -84,10 +84,13 @@ where
                         }
                     }
                 })
-                .for_each(|row_data| {
-                    let id = id_dlg(&row_data);
-                    orig_ids.remove(&id);
-                    addr.send(crate::msgs::UpdateListRowData(row_data)).map(|res| res.unwrap())
+                .chunks(64)
+                .for_each(|chunk| {
+                    for data in chunk.iter() {
+                        let id = id_dlg(&data);
+                        orig_ids.remove(&id);
+                    }
+                    addr.send(crate::msgs::UpdateListRowData(chunk)).map(|res| res.unwrap())
                 }).await;
             Ok(())
         }).into_actor(self))

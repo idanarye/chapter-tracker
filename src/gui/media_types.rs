@@ -56,21 +56,22 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::MediaType>> for Media
     type Result = ();
 
     fn handle(&mut self, msg: crate::msgs::UpdateListRowData<models::MediaType>, ctx: &mut Self::Context) -> Self::Result {
-        let crate::msgs::UpdateListRowData(data) = msg;
-        match self.media_types.entry(data.id) {
-            hashbrown::hash_map::Entry::Occupied(mut entry) => {
-                let entry = entry.get_mut();
-                if entry.model != data {
-                    entry.model = data;
-                    entry.update_widgets_from_model();
-                    entry.widgets.row_media_type.changed();
+        for data in msg.0 {
+            match self.media_types.entry(data.id) {
+                hashbrown::hash_map::Entry::Occupied(mut entry) => {
+                    let entry = entry.get_mut();
+                    if entry.model != data {
+                        entry.model = data;
+                        entry.update_widgets_from_model();
+                        entry.widgets.row_media_type.changed();
+                    }
                 }
-            }
-            hashbrown::hash_map::Entry::Vacant(entry) => {
-                let widgets: MediaTypeWidgets = self.factories.row_media_type.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
-                let entry = entry.insert(MediaTypeRow {model: data, widgets});
-                entry.update_widgets_from_model();
-                self.widgets.lst_media_types.add(&entry.widgets.row_media_type);
+                hashbrown::hash_map::Entry::Vacant(entry) => {
+                    let widgets: MediaTypeWidgets = self.factories.row_media_type.instantiate().connect_to((data.id, ctx.address())).widgets().unwrap();
+                    let entry = entry.insert(MediaTypeRow {model: data, widgets});
+                    entry.update_widgets_from_model();
+                    self.widgets.lst_media_types.add(&entry.widgets.row_media_type);
+                }
             }
         }
     }

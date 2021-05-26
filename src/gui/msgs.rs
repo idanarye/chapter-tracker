@@ -27,3 +27,7 @@ pub struct InitiateNewRowSequence;
 #[derive(actix::Message)]
 #[rtype(result="anyhow::Result<String>")]
 pub struct GetBaseDirForMediaType;
+
+#[derive(actix::Message)]
+#[rtype(result="()")]
+pub struct UpdateModel<T>(pub T);

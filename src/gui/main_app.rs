@@ -237,28 +237,29 @@ impl actix::Handler<crate::msgs::UpdateListRowData<FromRowWithExtra<models::Seri
     type Result = ();
 
     fn handle(&mut self, data: crate::msgs::UpdateListRowData<FromRowWithExtra<models::Series, models::SeriesReadStats>>, ctx: &mut Self::Context) -> Self::Result {
-        let crate::msgs::UpdateListRowData(data) = data;
-        match self.serieses.entry(data.data.id) {
-            hashbrown::hash_map::Entry::Occupied(entry) => {
-                entry.get().do_send(gui::msgs::UpdateActorData(data));
-            }
-            hashbrown::hash_map::Entry::Vacant(entry) => {
-                let bld = self.factories.row_series.instantiate();
-                let widgets: SeriesWidgets = bld.widgets().unwrap();
-                widgets.cbo_series_media_type.set_model(Some(&self.widgets.lsm_media_types));
-                self.series_sort_and_filter_data.set(&widgets.row_series, (data.extra.num_episodes, data.extra.num_unread, &data.data).into());
-                self.widgets.lst_serieses.add(&widgets.row_series);
-                let addr = SeriesActor::builder()
-                    .widgets(widgets)
-                    .factories(self.factories.clone())
-                    .main_app(ctx.address())
-                    .model(data.data)
-                    .series_read_stats(data.extra)
-                    .series_sort_and_filter_data(self.series_sort_and_filter_data)
-                    .build()
-                    .start();
-                entry.insert(addr.clone());
-                bld.connect_to(addr);
+        for data in data.0 {
+            match self.serieses.entry(data.data.id) {
+                hashbrown::hash_map::Entry::Occupied(entry) => {
+                    entry.get().do_send(gui::msgs::UpdateActorData(data));
+                }
+                hashbrown::hash_map::Entry::Vacant(entry) => {
+                    let bld = self.factories.row_series.instantiate();
+                    let widgets: SeriesWidgets = bld.widgets().unwrap();
+                    widgets.cbo_series_media_type.set_model(Some(&self.widgets.lsm_media_types));
+                    self.series_sort_and_filter_data.set(&widgets.row_series, (data.extra.num_episodes, data.extra.num_unread, &data.data).into());
+                    self.widgets.lst_serieses.add(&widgets.row_series);
+                    let addr = SeriesActor::builder()
+                        .widgets(widgets)
+                        .factories(self.factories.clone())
+                        .main_app(ctx.address())
+                        .model(data.data)
+                        .series_read_stats(data.extra)
+                        .series_sort_and_filter_data(self.series_sort_and_filter_data)
+                        .build()
+                        .start();
+                    entry.insert(addr.clone());
+                    bld.connect_to(addr);
+                }
             }
         }
     }
