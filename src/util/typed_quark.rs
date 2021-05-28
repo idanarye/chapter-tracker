@@ -39,12 +39,18 @@ impl<T: 'static> TypedQuark<T> {
     pub fn gen_sort_func<W: glib::ObjectExt>(&self, cmp: impl Fn(&T, &T) -> core::cmp::Ordering + 'static) -> Option<Box<dyn Fn(&W, &W) -> i32 + 'static>> {
         let typed_quark = self.clone();
         Some(Box::new(move |this, that| {
-            let this = typed_quark.get(this).unwrap();
-            let that = typed_quark.get(that).unwrap();
-            match cmp(this, that) {
-                std::cmp::Ordering::Less => -1,
-                std::cmp::Ordering::Equal => 0,
-                std::cmp::Ordering::Greater => 1,
+            let this = typed_quark.get(this);
+            let that = typed_quark.get(that);
+            match (this, that) {
+                // No data must mean it's a new row in the making - these put these rows last.
+                (None, None) => 0,
+                (None, Some(_)) => -1,
+                (Some(_), None) => 1,
+                (Some(this), Some(that)) => match cmp(this, that) {
+                    std::cmp::Ordering::Less => -1,
+                    std::cmp::Ordering::Equal => 0,
+                    std::cmp::Ordering::Greater => 1,
+                }
             }
         }))
     }
@@ -52,7 +58,12 @@ impl<T: 'static> TypedQuark<T> {
     pub fn gen_filter_func<W: glib::ObjectExt>(&self, pred: impl Fn(&T) -> bool + 'static) -> Option<Box<dyn Fn(&W) -> bool + 'static>> {
         let typed_quark = self.clone();
         Some(Box::new(move |widget| {
-            pred(typed_quark.get(widget).unwrap())
+            if let Some(data) = typed_quark.get(widget) {
+                pred(data)
+            } else {
+                // No data must mean it's a new row in the making.
+                true
+            }
         }))
     }
 }
