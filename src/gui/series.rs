@@ -311,6 +311,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
                         actor.update_series_read_stats(ctx);
+                        actor.main_app.do_send(crate::gui::msgs::RefreshLinksDirectory);
                         futures::future::ready(())
                     })
                 );
@@ -326,6 +327,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     .then(move |_, actor, ctx| {
                         actor.update_episodes(ctx, Some(episode_id));
                         actor.update_series_read_stats(ctx);
+                        actor.main_app.do_send(crate::gui::msgs::RefreshLinksDirectory);
                         futures::future::ready(())
                     })
                 );

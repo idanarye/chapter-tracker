@@ -6,15 +6,24 @@ mod main_app;
 mod series;
 mod directory;
 mod media_types;
+mod links_dir;
+
+#[derive(structopt::StructOpt, Debug)]
+struct CliArgs {
+    #[structopt(long)]
+    linksdir: Option<String>,
+}
 
 pub fn start_gui() -> anyhow::Result<i32> {
+    use structopt::StructOpt;
+    let cli_args = CliArgs::from_args();
+
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop()?;
 
     let factories = Factories::new(FactoriesInner::read(&*crate::Asset::get("gui.glade").unwrap())?);
 
-    let app = gtk::Application::new(Some("com.github.idanarye.chapter-tracker"), Default::default())?;
-    app.register::<gio::Cancellable>(None)?;
+    let app = gtk::Application::new(None, Default::default())?;
 
     woab::block_on(async {
         let bld = factories.app_main.instantiate();
@@ -25,6 +34,11 @@ pub fn start_gui() -> anyhow::Result<i32> {
             .start();
         woab::route_signal(&app, "activate", "app_activate", main_app.clone()).unwrap();
         woab::route_signal(&app, "shutdown", "app_shutdown", main_app.clone()).unwrap();
+
+        if let Some(links_directory) = cli_args.linksdir {
+            main_app.do_send(msgs::MaintainLinksDirectory(links_directory));
+        }
+
         bld.connect_to(main_app);
     });
 

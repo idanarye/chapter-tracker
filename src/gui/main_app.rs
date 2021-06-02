@@ -8,6 +8,7 @@ use hashbrown::HashMap;
 use crate::gui;
 use gui::series::{SeriesActor, SeriesWidgets, SeriesSortAndFilterData};
 use gui::media_types::MediaTypesActor;
+use gui::links_dir::LinksDirectoryMaintainer;
 use crate::util::db::{stream_query, FromRowWithExtra};
 use crate::util::TypedQuark;
 use crate::models;
@@ -20,6 +21,8 @@ pub struct MainAppActor {
     serieses: HashMap<i64, actix::Addr<SeriesActor>>,
     #[builder(setter(skip), default = TypedQuark::new("series_sort_and_filter_data"))]
     series_sort_and_filter_data: TypedQuark<SeriesSortAndFilterData>,
+    #[builder(setter(skip), default)]
+    links_directory_maintainers: Vec<actix::Addr<LinksDirectoryMaintainer>>,
 }
 
 impl actix::Actor for MainAppActor {
@@ -87,6 +90,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 }.into_actor(self)
                 .then(|result, actor, ctx| {
                     result.unwrap();
+                    ctx.address().do_send(gui::msgs::RefreshLinksDirectory);
                     ctx.address().send(gui::msgs::UpdateSeriesesList).into_actor(actor)
                 })
                 .then(move |result, actor, _| {
@@ -282,5 +286,28 @@ impl actix::Handler<crate::gui::msgs::RegisterActorAfterNew<crate::gui::series::
     fn handle(&mut self, msg: crate::gui::msgs::RegisterActorAfterNew<crate::gui::series::SeriesActor>, _ctx: &mut Self::Context) -> Self::Result {
         let crate::gui::msgs::RegisterActorAfterNew { id, addr } = msg;
         self.serieses.insert(id, addr);
+    }
+}
+
+impl actix::Handler<crate::gui::msgs::MaintainLinksDirectory> for MainAppActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: crate::gui::msgs::MaintainLinksDirectory, _ctx: &mut Self::Context) -> Self::Result {
+        let crate::gui::msgs::MaintainLinksDirectory(links_directory) = msg;
+        let addr = LinksDirectoryMaintainer::builder()
+            .dir_path(links_directory.into())
+            .build()
+            .start();
+        self.links_directory_maintainers.push(addr);
+    }
+}
+
+impl actix::Handler<crate::gui::msgs::RefreshLinksDirectory> for MainAppActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: crate::gui::msgs::RefreshLinksDirectory, _ctx: &mut Self::Context) -> Self::Result {
+        for addr in self.links_directory_maintainers.iter() {
+            addr.do_send(gui::msgs::RefreshLinksDirectory);
+        }
     }
 }

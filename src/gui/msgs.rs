@@ -31,3 +31,11 @@ pub struct GetBaseDirForMediaType;
 #[derive(actix::Message)]
 #[rtype(result="()")]
 pub struct UpdateModel<T>(pub T);
+
+#[derive(actix::Message)]
+#[rtype(result="()")]
+pub struct MaintainLinksDirectory(pub String);
+
+#[derive(actix::Message)]
+#[rtype(result="()")]
+pub struct RefreshLinksDirectory;
