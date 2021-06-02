@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use gio::prelude::*;
 
 mod msgs;
 mod main_app;
@@ -6,25 +7,29 @@ mod series;
 mod directory;
 mod media_types;
 
-pub fn start_gui() -> anyhow::Result<()> {
+pub fn start_gui() -> anyhow::Result<i32> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop()?;
 
     let factories = Factories::new(FactoriesInner::read(&*crate::Asset::get("gui.glade").unwrap())?);
 
+    let app = gtk::Application::new(Some("com.github.idanarye.chapter-tracker"), Default::default())?;
+    app.register::<gio::Cancellable>(None)?;
+
     woab::block_on(async {
-        factories.app_main.instantiate().connect_with(|bld| {
-            let main_app = main_app::MainAppActor::builder()
-                .widgets(bld.widgets().unwrap())
-                .factories(factories)
-                .build()
-                .start();
-            main_app
-        });
+        let bld = factories.app_main.instantiate();
+        let main_app = main_app::MainAppActor::builder()
+            .widgets(bld.widgets().unwrap())
+            .factories(factories)
+            .build()
+            .start();
+        woab::route_signal(&app, "activate", "app_activate", main_app.clone()).unwrap();
+        woab::route_signal(&app, "shutdown", "app_shutdown", main_app.clone()).unwrap();
+        bld.connect_to(main_app);
     });
 
-    gtk::main();
-    Ok(())
+    let exit_status = app.run(&[]);
+    Ok(exit_status)
 }
 
 #[derive(woab::Factories)]

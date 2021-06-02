@@ -1,4 +1,5 @@
 use gtk::prelude::*;
+use gio::prelude::*;
 use actix::prelude::*;
 use sqlx::prelude::*;
 
@@ -29,7 +30,6 @@ impl actix::Actor for MainAppActor {
             &self.widgets.app_main.get_screen().unwrap(),
             &css_provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
-        self.widgets.app_main.show();
         let addr = ctx.address();
         ctx.spawn(async move {
             addr.send(gui::msgs::UpdateMediaTypesList).await.unwrap().unwrap();
@@ -40,7 +40,7 @@ impl actix::Actor for MainAppActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct MainAppWidgets {
-    app_main: gtk::ApplicationWindow,
+    pub app_main: gtk::ApplicationWindow,
     lst_serieses: gtk::ListBox,
     lsm_media_types: gtk::ListStore,
     chk_series_unread: gtk::CheckButton,
@@ -54,6 +54,21 @@ impl actix::Handler<woab::Signal> for MainAppActor {
 
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "app_activate" => {
+                let woab::params!(
+                    app: gtk::Application,
+                ) = msg.params()?;
+                app.add_window(&self.widgets.app_main);
+                self.widgets.app_main.show();
+                None
+            }
+            "app_shutdown" => {
+                let woab::params!(
+                    app: gtk::Application,
+                ) = msg.params()?;
+                app.quit();
+                None
+            }
             "series_unread_toggled" => {
                 self.update_series_filter();
                 None
@@ -127,10 +142,6 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                     .build()
                     .start();
                 bld.connect_to(addr);
-                None
-            }
-            "close" => {
-                gtk::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
