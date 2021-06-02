@@ -36,7 +36,14 @@ impl actix::Handler<crate::gui::msgs::RefreshLinksDirectory> for LinksDirectoryM
         ctx.spawn(async move {
 
             let mut con = db::request_connection().await.unwrap();
-            let query = sqlx::query_as("SELECT * FROM episodes WHERE date_of_read IS NULL");
+            // TODO: instead of using media_types.program, add a dedicated field to media types
+            let query = sqlx::query_as(r#"
+                SELECT episodes.* FROM episodes
+                INNER JOIN serieses on episodes.series = serieses.id
+                INNER JOIN media_types ON serieses.media_type = media_types.id
+                WHERE episodes.date_of_read IS NULL
+                AND media_types.program = 'smplayer'
+            "#);
             let mut unread_episodes: HashMap<_, _> = query.fetch(&mut con).map_ok(|episode: models::Episode| {
                 if let Some(extension) = std::path::Path::new(&episode.file).extension() {
                     (format!("{}.{}", episode.name, extension.to_str().unwrap()), episode.file)
