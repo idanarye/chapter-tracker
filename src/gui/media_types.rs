@@ -85,6 +85,7 @@ impl MediaTypesActor {
             base_dir: "".to_owned(),
             file_types: "".to_owned(),
             program: "".to_owned(),
+            maintain_symlinks: false,
         };
         let entry = if let hashbrown::hash_map::Entry::Vacant(entry) = self.media_types.entry(data.id) {
             entry
@@ -150,6 +151,8 @@ struct MediaTypeWidgets {
     txt_media_type_file_types: gtk::Entry,
     #[prop_sync(set, get)]
     txt_media_type_program: gtk::Entry,
+    #[prop_sync("active": bool, set, get)]
+    chk_media_type_maintain_symlinks: gtk::ToggleButton,
     stk_media_type_edit: gtk::Stack,
     btn_save_media_type: gtk::Button,
     btn_cancel_media_type_edit: gtk::Button,
@@ -163,6 +166,7 @@ impl MediaTypeRow {
             txt_media_type_base_dir: &self.model.base_dir,
             txt_media_type_file_types: &self.model.file_types,
             txt_media_type_program: &self.model.program,
+            chk_media_type_maintain_symlinks: self.model.maintain_symlinks,
         });
     }
 
@@ -178,6 +182,7 @@ impl MediaTypeRow {
             .with_edit_widget(self.widgets.txt_media_type_base_dir.clone(), "changed", self.model.base_dir.clone(), |_| Ok(()))
             .with_edit_widget(self.widgets.txt_media_type_file_types.clone(), "changed", self.model.file_types.clone(), |_| Ok(()))
             .with_edit_widget(self.widgets.txt_media_type_program.clone(), "changed", self.model.program.clone(), |_| Ok(()))
+            .with_edit_widget(self.widgets.chk_media_type_maintain_symlinks.clone(), "toggled", self.model.maintain_symlinks.clone(), |_| Ok(()))
     }
 }
 
@@ -285,18 +290,20 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for MediaTypesAct
             txt_media_type_base_dir,
             txt_media_type_file_types,
             txt_media_type_program,
+            chk_media_type_maintain_symlinks,
         } = media_type.widgets.get_props();
         let main_app = self.main_app.clone();
         Box::pin(async move {
             if media_type_id < 0 {
                 let query = sqlx::query(r#"
-                    INSERT INTO media_types(name, base_dir, file_types, program)
-                    VALUES(?, ?, ?, ?)
+                    INSERT INTO media_types(name, base_dir, file_types, program, maintain_symlinks)
+                    VALUES(?, ?, ?, ?, ?)
                 "#)
                     .bind(txt_media_type_name)
                     .bind(txt_media_type_base_dir)
                     .bind(txt_media_type_file_types)
-                    .bind(txt_media_type_program);
+                    .bind(txt_media_type_program)
+                    .bind(chk_media_type_maintain_symlinks);
                 let mut con = db::request_connection().await?;
                 let query_result = query.execute(&mut con).await?;
                 Ok(query_result.last_insert_rowid())
@@ -307,12 +314,14 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for MediaTypesAct
                       , base_dir = ?
                       , file_types = ?
                       , program = ?
+                      , maintain_symlinks = ?
                     WHERE id = ?
                 "#)
                     .bind(txt_media_type_name)
                     .bind(txt_media_type_base_dir)
                     .bind(txt_media_type_file_types)
                     .bind(txt_media_type_program)
+                    .bind(chk_media_type_maintain_symlinks)
                     .bind(media_type_id);
                 let mut con = db::request_connection().await?;
                 query.execute(&mut con).await?;

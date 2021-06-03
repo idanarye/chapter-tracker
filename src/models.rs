@@ -5,6 +5,7 @@ pub struct MediaType {
     pub base_dir: String,
     pub file_types: String,
     pub program: String,
+    pub maintain_symlinks: bool,
 }
 
 #[derive(PartialEq, Debug, Clone, sqlx::FromRow)]
