@@ -391,9 +391,9 @@ impl DirectoryActor {
                     lsm.set_value(&it, 0, &path.to_value());
                     if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
                         if let Some(volume) = volume {
-                            lsm.set_value(&it, 1, &volume.to_string().to_value());
+                            lsm.set_value(&it, 2, &volume.to_string().to_value());
                         }
-                        lsm.set_value(&it, 2, &chapter.to_string().to_value());
+                        lsm.set_value(&it, 1, &chapter.to_string().to_value());
                     }
                 }
                 Err(_) => {}
