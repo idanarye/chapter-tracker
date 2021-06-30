@@ -32,7 +32,7 @@ impl<T: 'static> TypedQuark<T> {
 
     pub fn get<'a>(&self, obj: &'a impl glib::ObjectExt) -> Option<&'a T> {
         unsafe {
-            obj.get_qdata(self.quark)
+            obj.qdata(self.quark).map(|qd| qd.as_ref())
         }
     }
 

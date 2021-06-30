@@ -1,5 +1,4 @@
 use gtk::prelude::*;
-use gio::prelude::*;
 use actix::prelude::*;
 use sqlx::prelude::*;
 
@@ -30,7 +29,7 @@ impl actix::Actor for MainAppActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         let css_provider = crate::Asset::css_provider("default.css");
         gtk::StyleContext::add_provider_for_screen(
-            &self.widgets.app_main.get_screen().unwrap(),
+            &self.widgets.app_main.screen().unwrap(),
             &css_provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
         let addr = ctx.address();
@@ -131,8 +130,8 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 let lst_serieses = self.widgets.lst_serieses.clone();
                 ctx.spawn(async move {
                     actix::clock::sleep(core::time::Duration::from_nanos(100_000_000)).await;
-                    if let Some(adjustment) = lst_serieses.get_adjustment() {
-                        adjustment.set_value(adjustment.get_upper());
+                    if let Some(adjustment) = lst_serieses.adjustment() {
+                        adjustment.set_value(adjustment.upper());
                     }
                 }.into_actor(self));
                 None
@@ -157,8 +156,8 @@ impl MainAppActor {
     fn update_series_filter(&self) {
         use fuzzy_matcher::FuzzyMatcher;
         let fuzzy_matcher = fuzzy_matcher::skim::SkimMatcherV2::default();
-        let unread_only = self.widgets.chk_series_unread.get_active();
-        let name_filter = self.widgets.txt_series_filter.get_text().as_str().to_owned();
+        let unread_only = self.widgets.chk_series_unread.is_active();
+        let name_filter = self.widgets.txt_series_filter.text().as_str().to_owned();
         self.widgets.lst_serieses.set_filter_func(self.series_sort_and_filter_data.gen_filter_func(move |series| {
             if unread_only && series.num_unread == 0 {
                 return false;

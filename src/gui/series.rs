@@ -95,7 +95,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     return Ok(None);
                 }
                 let toggle_button: gtk::ToggleButton = msg.param(0)?;
-                if toggle_button.get_active() {
+                if toggle_button.is_active() {
                     self.update_episodes(ctx, None);
                     self.update_directories(ctx);
                     self.widgets.rvl_episodes.set_reveal_child(true);
@@ -172,11 +172,11 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 None
             }
             "open_download_command_directory_dialog" => {
-                if !self.widgets.txt_download_command_dir.get_editable() {
+                if !self.widgets.txt_download_command_dir.is_editable() {
                     return Ok(None)
                 }
                 let icon_position: gtk::EntryIconPosition = msg.param(1)?;
-                match (self.widgets.txt_download_command_dir.get_editable(), icon_position) {
+                match (self.widgets.txt_download_command_dir.is_editable(), icon_position) {
                     (true, gtk::EntryIconPosition::Primary) => {
                         ctx.spawn(crate::util::dialogs::run_set_directory_dialog(self.widgets.txt_download_command_dir.clone(), None).into_actor(self));
                     }
@@ -189,9 +189,9 @@ impl actix::Handler<woab::Signal> for SeriesActor {
             }
             "execute_download_command" => {
                 let icon_position: gtk::EntryIconPosition = msg.param(1)?;
-                match (self.widgets.txt_download_command_dir.get_editable(), icon_position) {
+                match (self.widgets.txt_download_command_dir.is_editable(), icon_position) {
                     (_, gtk::EntryIconPosition::Primary) => {
-                        let download_command = self.widgets.txt_download_command.get_text();
+                        let download_command = self.widgets.txt_download_command.text();
                         let download_command = download_command.as_str();
                         if download_command != "" {
                             use std::process::Command;
@@ -207,7 +207,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
 
                             command.arg(download_command);
 
-                            let download_command_dir = self.widgets.txt_download_command_dir.get_text();
+                            let download_command_dir = self.widgets.txt_download_command_dir.text();
                             let download_command_dir = download_command_dir.as_str();
                             if download_command_dir != "" {
                                 command.current_dir(download_command_dir);
@@ -287,7 +287,7 @@ impl actix::Handler<crate::gui::msgs::UpdateActorData<crate::util::db::FromRowWi
             self.model = data.data;
             self.series_read_stats = data.extra;
             self.update_widgets_from_model();
-            if self.widgets.rvl_episodes.get_reveal_child() {
+            if self.widgets.rvl_episodes.reveals_child() {
                 self.update_episodes(ctx, None);
             }
             self.update_sort_and_filter_data();

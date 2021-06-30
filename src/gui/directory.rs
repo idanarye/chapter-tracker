@@ -41,15 +41,15 @@ impl actix::Actor for DirectoryActor {
     fn started(&mut self, _ctx: &mut Self::Context) {
         self.update_widgets_from_model();
         self.widgets.srt_directory_scan_preview.set_default_sort_func(|mdl, it1, it2| {
-            let parse_column = |it, column| mdl.get_value(it, column).get::<String>().unwrap().and_then(|s| s.parse::<i64>().ok());
+            let parse_column = |it, column| mdl.value(it, column).get::<String>().ok().and_then(|s| s.parse::<i64>().ok());
             let chap1 = parse_column(it1, 2);
             let chap2 = parse_column(it2, 2);
             match (chap1.is_some(), chap2.is_some()) {
                 (true, false) => core::cmp::Ordering::Less,
                 (false, true) => core::cmp::Ordering::Greater,
                 _ => {
-                    let file1 = mdl.get_value(it1, 0).get::<String>().unwrap();
-                    let file2 = mdl.get_value(it2, 0).get::<String>().unwrap();
+                    let file1 = mdl.value(it1, 0).get::<String>().unwrap();
+                    let file2 = mdl.value(it2, 0).get::<String>().unwrap();
                     file1.cmp(&file2)
                 }
             }
@@ -134,7 +134,7 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "open_directory_dir_dialog" => {
-                if self.widgets.txt_directory_dir.get_editable() {
+                if self.widgets.txt_directory_dir.is_editable() {
                     let txt_directory_dir = self.widgets.txt_directory_dir.clone();
                     let series = self.series.clone();
                     ctx.spawn(async move {
@@ -376,7 +376,7 @@ impl actix::StreamHandler<PreviewEvent> for DirectoryActor {
 
 impl DirectoryActor {
     fn apply_pattern_to_preview(&self) {
-        let regex = match regex::Regex::new(self.widgets.txt_directory_pattern.get_text().as_str()) {
+        let regex = match regex::Regex::new(self.widgets.txt_directory_pattern.text().as_str()) {
             Ok(regex) => regex,
             Err(_) => {
                 return;

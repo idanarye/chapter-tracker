@@ -23,7 +23,7 @@ pub fn start_gui() -> anyhow::Result<i32> {
 
     let factories = Factories::new(FactoriesInner::read(&*crate::Asset::get("gui.glade").unwrap())?);
 
-    let app = gtk::Application::new(None, Default::default())?;
+    let app = gtk::Application::new(None, Default::default());
 
     woab::block_on(async {
         let bld = factories.app_main.instantiate();
@@ -42,7 +42,7 @@ pub fn start_gui() -> anyhow::Result<i32> {
         bld.connect_to(main_app);
     });
 
-    let exit_status = app.run(&[]);
+    let exit_status = app.run();
     Ok(exit_status)
 }
 

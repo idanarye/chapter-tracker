@@ -25,8 +25,8 @@ impl EditMode {
     where
         W: glib::ObjectExt,
         W: glib::IsA<gtk::Widget>,
-        for<'a> W: glib::value::FromValueOptional<'a>,
         W: WidgetForEditMode<T>,
+        W: Clone,
         T: PartialEq,
         T: Clone,
         T: 'static,
@@ -41,31 +41,34 @@ impl EditMode {
         });
         if let Err(err) = validate(&widget.get_value()) {
             widget.set_tooltip_text(Some(&err));
-            widget.get_style_context().add_class("bad-input");
+            widget.style_context().add_class("bad-input");
         }
-        let signal_handler_id = widget.connect_local(widget_update_signal, false, move |args| {
-            let widget: W = args[0].get().unwrap().unwrap();
-            let style_context = widget.get_style_context();
-            let value = widget.get_value();
-            if value == saved_value {
-                style_context.remove_class("unsaved-change");
-            } else {
-                style_context.add_class("unsaved-change");
+        let signal_handler_id = widget.connect_local(widget_update_signal, false, {
+            let widget = widget.clone();
+            move |_args| {
+                let style_context = widget.style_context();
+                let value = widget.get_value();
+                if value == saved_value {
+                    style_context.remove_class("unsaved-change");
+                } else {
+                    style_context.add_class("unsaved-change");
+                }
+                if let Err(err) = validate(&value) {
+                    widget.set_tooltip_text(Some(&err));
+                    style_context.add_class("bad-input");
+                } else {
+                    widget.set_tooltip_text(None);
+                    style_context.remove_class("bad-input");
+                }
+                None
             }
-            if let Err(err) = validate(&value) {
-                widget.set_tooltip_text(Some(&err));
-                style_context.add_class("bad-input");
-            } else {
-                widget.set_tooltip_text(None);
-                style_context.remove_class("bad-input");
-            }
-            None
-        }).unwrap();
+        }
+        ).unwrap();
         widget.set_editability(true);
-        widget.get_style_context().add_class("being-edited");
+        widget.style_context().add_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
             widget.set_tooltip_text(None);
-            let style_context = widget.get_style_context();
+            let style_context = widget.style_context();
             style_context.remove_class("being-edited");
             style_context.remove_class("unsaved-change");
             style_context.remove_class("bad-input");
@@ -82,7 +85,7 @@ impl EditMode {
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
                 self.save_button.connect_clicked(move |_| {
                     for widget in widgets.iter() {
-                        if widget.get_style_context().has_class("bad-input") {
+                        if widget.style_context().has_class("bad-input") {
                             return;
                         }
                     }
@@ -145,7 +148,7 @@ impl WidgetForEditMode<String> for gtk::Entry {
     }
 
     fn get_value(&self) -> String {
-        self.get_text().into()
+        self.text().into()
     }
 
     fn set_value(&self, value: String) {
@@ -163,7 +166,7 @@ impl WidgetForEditMode<i64> for gtk::ComboBox {
     }
 
     fn get_value(&self) -> i64 {
-        if let Some(active_id) = self.get_active_id() {
+        if let Some(active_id) = self.active_id() {
             active_id.parse().unwrap_or(-1)
         } else {
             -1
@@ -185,7 +188,7 @@ impl WidgetForEditMode<bool> for gtk::ToggleButton {
     }
 
     fn get_value(&self) -> bool {
-        self.get_active()
+        self.is_active()
     }
 
     fn set_value(&self, value: bool) {

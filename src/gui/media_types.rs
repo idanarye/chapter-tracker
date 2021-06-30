@@ -195,7 +195,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
         Ok(match msg.name() {
             "open_base_directory_dialog" => {
                 let icon_position: gtk::EntryIconPosition = msg.param(1)?;
-                match (media_type.widgets.txt_media_type_base_dir.get_editable(), icon_position) {
+                match (media_type.widgets.txt_media_type_base_dir.is_editable(), icon_position) {
                     (true, gtk::EntryIconPosition::Primary) => {
                         ctx.spawn(crate::util::dialogs::run_set_directory_dialog(media_type.widgets.txt_media_type_base_dir.clone(), None).into_actor(self));
                     }
