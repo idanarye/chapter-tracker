@@ -48,8 +48,8 @@ impl actix::Actor for DirectoryActor {
                 (true, false) => core::cmp::Ordering::Less,
                 (false, true) => core::cmp::Ordering::Greater,
                 _ => {
-                    let file1 = mdl.value(it1, 0).get::<String>().unwrap();
-                    let file2 = mdl.value(it2, 0).get::<String>().unwrap();
+                    let file1 = mdl.value(it1, 0).get::<String>().ok();
+                    let file2 = mdl.value(it2, 0).get::<String>().ok();
                     file1.cmp(&file2)
                 }
             }

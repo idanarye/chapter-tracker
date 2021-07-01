@@ -120,7 +120,7 @@ impl EditMode {
                     futures::future::Either::Right(_) => None,
                 }
             } else {
-                Some(save_fut.await.unwrap())
+                save_fut.await.ok()
             }
         };
         self.stack.set_property("visible-child-name", &"normal").unwrap();
