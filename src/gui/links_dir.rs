@@ -44,10 +44,11 @@ impl actix::Handler<crate::gui::msgs::RefreshLinksDirectory> for LinksDirectoryM
                 AND media_types.maintain_symlinks
             "#);
             let mut unread_episodes: HashMap<_, _> = query.fetch(&mut con).map_ok(|episode: models::Episode| {
+                let base_name = format!("{} {}", episode.name, episode.id);
                 if let Some(extension) = std::path::Path::new(&episode.file).extension() {
-                    (format!("{}.{}", episode.name, extension.to_str().unwrap()), episode.file)
+                    (format!("{}.{}", base_name, extension.to_str().unwrap()), episode.file)
                 } else {
-                    (episode.name, episode.file)
+                    (base_name, episode.file)
                 }
             }).try_collect().await.unwrap();
 
