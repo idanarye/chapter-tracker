@@ -1983,7 +1983,9 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "woab"
-version = "0.5.0"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abb1a1093e0ea29e4319aea236331dea94b4955c0911810b6eb2697f1fbe5caf"
 dependencies = [
  "actix",
  "gdk",
@@ -2000,7 +2002,9 @@ dependencies = [
 
 [[package]]
 name = "woab-macros"
-version = "0.5.0"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a58003c8c50b1d0f45aebc95b8f4008ecb1a6bc21a67ed5669183a801009cba"
 dependencies = [
  "proc-macro2",
  "quote",

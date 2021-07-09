@@ -21,8 +21,8 @@ futures = "0.3.14"
 regex = "1.4.5"
 actix = "0.12"
 rust-embed = "5.9.0"
-# woab = "0.5.0"
-woab = { path = "../woab"}
+woab = "0.6.0"
+# woab = { path = "../woab"}
 gtk = "0.14"
 glib = "0.14"
 hashbrown = "0.11.2"

@@ -19,7 +19,7 @@ pub fn start_gui() -> anyhow::Result<i32> {
     let cli_args = CliArgs::from_args();
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     let factories = Factories::new(FactoriesInner::read(&*crate::Asset::get("gui.glade").unwrap())?);
 
