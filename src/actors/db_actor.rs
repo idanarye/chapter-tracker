@@ -1,7 +1,12 @@
+use std::str::FromStr;
+
 use actix::prelude::*;
 use futures::prelude::*;
 
-use sqlx::sqlite::SqlitePool;
+use sqlx::sqlite::{
+    SqlitePool,
+    SqliteConnectOptions,
+};
 
 #[derive(typed_builder::TypedBuilder)]
 pub struct DbActor {
@@ -22,7 +27,10 @@ impl Default for DbActor {
     fn default() -> Self {
         let pool = std::thread::spawn(|| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
-                let pool = SqlitePool::connect("sqlite:chapter_tracker.db3").await?;
+                let pool = SqlitePool::connect_with(
+                    SqliteConnectOptions::from_str("sqlite:chapter_tracker.db3")?
+                    .create_if_missing(true)
+                ).await?;
                 sqlx::migrate!("./migrations").run(&pool).await?;
                 Ok::<_, anyhow::Error>(pool)
             }).unwrap()
@@ -45,7 +53,6 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
 
 impl Handler<crate::msgs::RequestConnection> for DbActor {
     type Result = actix::ResponseFuture<sqlx::Result<crate::SqlitePoolConnection>>;
-    // type Result = Result<Rc<sqlx::sqlite::SqlitePool>, ()>;
 
     fn handle(&mut self, _msg: crate::msgs::RequestConnection, _ctx: &mut Self::Context) -> Self::Result {
         Box::pin(self.pool.acquire())

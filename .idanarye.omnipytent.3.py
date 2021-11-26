@@ -14,7 +14,8 @@ def check(ctx):
 
 @task
 def run(ctx):
-    cargo['run', '--', '--linksdir', 'episodes-links'].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & TERMINAL_PANEL
+    # cargo['run', '--', '--linksdir', 'episodes-links'].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & TERMINAL_PANEL
+    cargo['run'].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & TERMINAL_PANEL
     # cargo['run'].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & TERMINAL_PANEL
 
 

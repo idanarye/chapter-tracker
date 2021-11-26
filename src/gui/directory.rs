@@ -42,15 +42,26 @@ impl actix::Actor for DirectoryActor {
         self.update_widgets_from_model();
         self.widgets.srt_directory_scan_preview.set_default_sort_func(|mdl, it1, it2| {
             let parse_column = |it, column| mdl.value(it, column).get::<String>().ok().and_then(|s| s.parse::<i64>().ok());
-            let chap1 = parse_column(it1, 2);
-            let chap2 = parse_column(it2, 2);
-            match (chap1.is_some(), chap2.is_some()) {
-                (true, false) => core::cmp::Ordering::Less,
-                (false, true) => core::cmp::Ordering::Greater,
-                _ => {
+            let chap1 = parse_column(it1, 1);
+            let chap2 = parse_column(it2, 1);
+            match (chap1, chap2) {
+                (Some(_), None) => core::cmp::Ordering::Less,
+                (None, Some(_)) => core::cmp::Ordering::Greater,
+                (None, None) => {
                     let file1 = mdl.value(it1, 0).get::<String>().ok();
                     let file2 = mdl.value(it2, 0).get::<String>().ok();
                     file1.cmp(&file2)
+                }
+                (Some(chap1), Some(chap2)) => {
+                    let vol1 = parse_column(it1, 2);
+                    let vol2 = parse_column(it2, 2);
+                    match (vol1, vol2) {
+                        (None, None) => chap1.cmp(&chap2),
+                        (Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
+                        // These two shouldn't happen, but still:
+                        (Some(_), None) => core::cmp::Ordering::Less,
+                        (None, Some(_)) => core::cmp::Ordering::Greater,
+                    }
                 }
             }
         });
