@@ -27,9 +27,6 @@ pub async fn run_files_discovery(mut con: crate::SqlitePoolConnection) -> anyhow
     }).await?;
     let mut result = Vec::new();
     for ((path, recursive), directories) in directories {
-        if path.matches("BitTorrent").next().is_none() {
-            continue;
-        }
         log::trace!("{} has {} patterns", path, directories.len());
         let new_files = discover_in_path(&mut con, &path, recursive).await?;
         if new_files.is_empty() {

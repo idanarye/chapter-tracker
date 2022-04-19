@@ -5,11 +5,11 @@ from omnipytent.ext.idan import *
 
 @task
 def build(ctx):
-    cargo['build', '-q'] & TERMINAL_PANEL
+    cargo['build', '--examples'] & TERMINAL_PANEL
 
 @task
 def check(ctx):
-    cargo['check', '-q'] & ERUN.bang
+    cargo['check', '-q', '--examples'] & ERUN.bang
 
 
 @task
@@ -26,7 +26,7 @@ def test(ctx):
 
 @task
 def go(ctx, example=cargo_example):
-    cargo['run', '-q', '--example', example].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & BANG
+    cargo['run', '-q', '--example', example].with_env(RUST_BACKTRACE='1', RUST_LOG='chapter_tracker=debug') & TERMINAL_PANEL.size(40)
 
 
 @task
