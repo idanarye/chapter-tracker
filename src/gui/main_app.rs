@@ -159,7 +159,7 @@ impl MainAppActor {
         let unread_only = self.widgets.chk_series_unread.is_active();
         let name_filter = self.widgets.txt_series_filter.text().as_str().to_owned();
         self.widgets.lst_serieses.set_filter_func(self.series_sort_and_filter_data.gen_filter_func(move |series| {
-            if unread_only && series.num_unread == 0 {
+            if unread_only && series.num_unread == 0 && 0 < series.num_episodes {
                 return false;
             }
             fuzzy_matcher.fuzzy_match(&series.name, &name_filter).is_some()

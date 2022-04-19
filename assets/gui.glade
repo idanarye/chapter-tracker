@@ -827,7 +827,7 @@
             <property name="can-focus">False</property>
             <child>
               <object class="GtkCheckButton" id="chk_series_unread">
-                <property name="label" translatable="yes">Unread</property>
+                <property name="label" translatable="yes">Unread and/or Empty</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>

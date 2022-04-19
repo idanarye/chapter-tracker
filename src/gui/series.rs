@@ -29,13 +29,15 @@ pub struct SeriesActor {
 
 pub struct SeriesSortAndFilterData {
     pub name: String,
+    pub num_episodes: i32,
     pub num_unread: i32,
 }
 
 impl core::convert::From<(i32, i32, &models::Series)> for SeriesSortAndFilterData {
-    fn from((_num_episodes, num_unread, series): (i32, i32, &models::Series)) -> Self {
+    fn from((num_episodes, num_unread, series): (i32, i32, &models::Series)) -> Self {
         Self {
             name: series.name.clone(),
+            num_episodes,
             num_unread,
         }
     }
