@@ -48,6 +48,7 @@ pub struct MainAppWidgets {
     chk_series_unread: gtk::CheckButton,
     txt_series_filter: gtk::Entry,
     spn_scan_files: gtk::Spinner,
+    spn_clean_dangling: gtk::Spinner,
 
 }
 
@@ -95,6 +96,25 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 .then(move |result, actor, _| {
                     button.set_sensitive(true);
                     actor.widgets.spn_scan_files.stop();
+                    result.unwrap().unwrap();
+                    futures::future::ready(())
+                }));
+                None
+            }
+            "clean_dangling" => {
+                let button: gtk::Button = msg.param(0)?;
+                self.widgets.spn_clean_dangling.start();
+                button.set_sensitive(false);
+                ctx.spawn(async {
+                    crate::actors::DbActor::from_registry().send(crate::msgs::FindAndRemoveDanglingFiles).await.unwrap().unwrap();
+                }.into_actor(self)
+                .then(|_result, actor, ctx| {
+                    ctx.address().do_send(gui::msgs::RefreshLinksDirectory);
+                    ctx.address().send(gui::msgs::UpdateSeriesesList).into_actor(actor)
+                })
+                .then(move |result, actor, _| {
+                    button.set_sensitive(true);
+                    actor.widgets.spn_clean_dangling.stop();
                     result.unwrap().unwrap();
                     futures::future::ready(())
                 }));

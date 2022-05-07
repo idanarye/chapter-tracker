@@ -3,6 +3,7 @@ use std::str::FromStr;
 use actix::prelude::*;
 use futures::prelude::*;
 
+use sqlx::prelude::*;
 use sqlx::sqlite::{
     SqlitePool,
     SqliteConnectOptions,
@@ -47,6 +48,23 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
     fn handle(&mut self, _msg: crate::msgs::DiscoverFiles, _ctx: &mut Self::Context) -> Self::Result {
         Box::pin(self.pool.acquire().then(|con| async move {
             Ok(crate::files_discovery::run_files_discovery(con?).await?)
+        }).into_actor(self))
+    }
+}
+
+impl Handler<crate::msgs::FindAndRemoveDanglingFiles> for DbActor {
+    type Result = ResponseActFuture<Self, anyhow::Result<()>>;
+
+    fn handle(&mut self, _msg: crate::msgs::FindAndRemoveDanglingFiles, _ctx: &mut Self::Context) -> Self::Result {
+        Box::pin(self.pool.acquire().then(|con| async move {
+            let mut con = con?;
+            let dangling_file_ids = crate::files_discovery::run_dangling_files_scan(&mut con).await?;
+            let mut tx = con.begin().await?;
+            for dangling_file_id in dangling_file_ids.iter() {
+                sqlx::query("DELETE FROM episodes WHERE id == ?").bind(dangling_file_id).execute(&mut tx).await?;
+            }
+            tx.commit().await?;
+            Ok(())
         }).into_actor(self))
     }
 }

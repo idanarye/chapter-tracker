@@ -7,6 +7,7 @@ from omnipytent.ext.idan import *
 def build(ctx):
     cargo['build', '--examples'] & TERMINAL_PANEL
 
+
 @task
 def check(ctx):
     cargo['check', '-q', '--examples'] & ERUN.bang

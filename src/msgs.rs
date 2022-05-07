@@ -2,6 +2,10 @@
 #[rtype(result="anyhow::Result<Vec<crate::files_discovery::FoundFile>>")]
 pub struct DiscoverFiles;
 
+#[derive(actix::Message)]
+#[rtype(result="anyhow::Result<()>")]
+pub struct FindAndRemoveDanglingFiles;
+
 pub struct RequestConnection;
 
 impl actix::Message for RequestConnection {

@@ -1,4 +1,7 @@
-use hashbrown::HashMap;
+use std::path::PathBuf;
+
+use futures::future::join_all;
+use hashbrown::{HashMap, HashSet};
 
 use futures::stream::TryStreamExt;
 use tokio::fs;
@@ -145,4 +148,39 @@ pub async fn discover_in_path(con: &mut crate::SqlitePoolConnection, path: &str,
         .try_collect().await?;
     tx.rollback().await?;
     Ok(new_files)
+}
+
+pub async fn run_dangling_files_scan(con: &mut crate::SqlitePoolConnection) -> anyhow::Result<Vec<i64>> {
+    let unread_episodes: Vec<models::Episode> = sqlx::query_as("SELECT * FROM episodes WHERE date_of_read IS NULL").fetch(con).try_collect().await?;
+    let mut file_to_id: HashMap<PathBuf, i64> = unread_episodes.into_iter().map(|episode| (PathBuf::from(episode.file), episode.id)).collect();
+    let directories: HashSet<_> = file_to_id.keys().map(|filepath| {
+        let mut filepath = filepath.clone();
+        filepath.pop();
+        filepath
+    }).collect();
+    for found_files in join_all(directories.into_iter().map(|directory| async move {
+        match fs::read_dir(&directory).await {
+            Ok(ok) => {
+                let mut found_files = Vec::new();
+                let mut read_dir_result = ReadDirStream::new(ok);
+                while let Some(dir_entry) = read_dir_result.try_next().await? {
+                    found_files.push(directory.join(dir_entry.file_name()));
+                }
+                Ok(found_files)
+            }
+            Err(err) => {
+                if matches!(err.kind(), std::io::ErrorKind::NotFound) {
+                    log::debug!("{:?} does not exist - skipping", directory);
+                    Ok(Vec::new())
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    })).await {
+        for found_file in found_files? {
+            file_to_id.remove(&found_file);
+        }
+    }
+    Ok(file_to_id.values().copied().collect())
 }
