@@ -28,8 +28,11 @@ impl Default for DbActor {
     fn default() -> Self {
         let pool = std::thread::spawn(|| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
+                use structopt::StructOpt;
+                let cli_args = crate::CliArgs::from_args();
+                let dbfile = &cli_args.dbfile.as_ref().map(String::as_str).unwrap_or("chapter_tracker.db3");
                 let pool = SqlitePool::connect_with(
-                    SqliteConnectOptions::from_str("sqlite:chapter_tracker.db3")?
+                    SqliteConnectOptions::from_str(&format!("sqlite:{dbfile}"))?
                     .create_if_missing(true)
                 ).await?;
                 sqlx::migrate!("./migrations").run(&pool).await?;

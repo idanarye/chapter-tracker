@@ -22,3 +22,11 @@ impl Asset {
 
 type SqlitePoolConnection = sqlx::pool::PoolConnection<sqlx::Sqlite>;
 type SqliteQueryAs<'q, O> = sqlx::query::QueryAs<'q, sqlx::sqlite::Sqlite, O, <sqlx::sqlite::Sqlite as sqlx::database::HasArguments<'q>>::Arguments>;
+
+#[derive(structopt::StructOpt, Debug)]
+pub struct CliArgs {
+    #[structopt(long)]
+    dbfile: Option<String>,
+    #[structopt(long)]
+    linksdir: Option<String>,
+}

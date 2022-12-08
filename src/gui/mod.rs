@@ -8,15 +8,9 @@ mod directory;
 mod media_types;
 mod links_dir;
 
-#[derive(structopt::StructOpt, Debug)]
-struct CliArgs {
-    #[structopt(long)]
-    linksdir: Option<String>,
-}
-
 pub fn start_gui() -> anyhow::Result<i32> {
     use structopt::StructOpt;
-    let cli_args = CliArgs::from_args();
+    let cli_args = crate::CliArgs::from_args();
 
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop();
