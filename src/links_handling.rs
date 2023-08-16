@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use futures::TryStreamExt;
 use hashbrown::{HashMap, HashSet};
@@ -48,6 +48,10 @@ pub async fn refresh_links_directory(
     con: &mut crate::SqlitePoolConnection,
     links_dir_path: &Path,
 ) -> anyhow::Result<()> {
+    let media_type_to_adjacent_types = prepare_media_type_to_adjacent_types_mapping(con).await?;
+    let series_to_adjacent_types =
+        prepare_series_to_adjacent_types_mapping(con, &media_type_to_adjacent_types).await?;
+
     let query = sqlx::query_as(
         r#"
         SELECT episodes.* FROM episodes
@@ -82,7 +86,34 @@ pub async fn refresh_links_directory(
         }
     }
 
-    let mut unread_episodes = unread_episodes
+    let mut all_adjacent_files: HashMap<PathBuf, HashSet<&str>> = HashMap::new();
+    {
+        let directories_with_unread_episodes: HashSet<_> = unread_episodes
+            .iter()
+            .filter_map(|episode| Path::new(&episode.file).parent())
+            .collect();
+        let all_potential_adjacent_suffixes: HashSet<_> = series_to_adjacent_types
+            .values()
+            .flat_map(|suffixes| suffixes.iter().map(|ext| ext.as_str()))
+            .collect();
+
+        for directory in directories_with_unread_episodes.iter() {
+            let mut reader = fs::read_dir(directory).await.unwrap();
+            while let Some(dirent) = reader.next_entry().await? {
+                let file_path = dirent.path();
+                let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) else { return Ok(()) };
+                if let Some(extension) = all_potential_adjacent_suffixes.get(extension) {
+                    let file_without_extension = file_path.with_extension("");
+                    all_adjacent_files
+                        .entry(file_without_extension)
+                        .or_default()
+                        .insert(extension);
+                }
+            }
+        }
+    }
+
+    let mut desired_links = unread_episodes
         .into_iter()
         .map(|episode: models::Episode| {
             use std::fmt::Write;
@@ -109,21 +140,20 @@ pub async fn refresh_links_directory(
         })
         .collect::<HashMap<_, _>>();
 
+    log::info!("{:?}", desired_links);
+
     let read_dir_result = ReadDirStream::new(fs::read_dir(links_dir_path).await.unwrap());
     let existing_files: Vec<_> = read_dir_result.try_collect().await.unwrap();
 
     for file in existing_files {
         let file_name = file.file_name();
-        if unread_episodes
-            .remove(file_name.to_str().unwrap())
-            .is_none()
-        {
+        if desired_links.remove(file_name.to_str().unwrap()).is_none() {
             log::debug!("Removing {:?}", file);
             fs::remove_file(file.path()).await.unwrap();
         }
     }
 
-    for (link_name, link_target) in unread_episodes {
+    for (link_name, link_target) in desired_links {
         let link_path = links_dir_path.join(link_name);
         log::debug!("Linking {:?} to {}", link_path, link_target);
         fs::symlink(link_target, link_path).await.unwrap();
