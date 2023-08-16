@@ -113,49 +113,59 @@ pub async fn refresh_links_directory(
         }
     }
 
-    let mut desired_links = unread_episodes
-        .into_iter()
-        .map(|episode: models::Episode| {
-            use std::fmt::Write;
-            let mut link_name = if let Some(pad_to) = pad_series_chapters_to.get(&episode.series) {
-                chapter_pattern
-                    .replace(&episode.name, |captures: &regex::Captures| {
-                        let mut result = String::new();
-                        let chapter = captures.get(1).unwrap().as_str();
-                        for _ in chapter.len()..*pad_to {
-                            result.write_char('0').unwrap();
-                        }
-                        result.write_str(chapter).unwrap();
-                        result
-                    })
-                    .into_owned()
-            } else {
-                episode.name
-            };
-            write!(&mut link_name, " {}", episode.id).unwrap();
-            if let Some(extension) = Path::new(&episode.file).extension() {
-                write!(&mut link_name, ".{}", extension.to_str().unwrap()).unwrap();
+    let mut desired_links = HashMap::new();
+    for episode in unread_episodes {
+        use std::fmt::Write;
+        let mut link_name = if let Some(pad_to) = pad_series_chapters_to.get(&episode.series) {
+            chapter_pattern
+                .replace(&episode.name, |captures: &regex::Captures| {
+                    let mut result = String::new();
+                    let chapter = captures.get(1).unwrap().as_str();
+                    for _ in chapter.len()..*pad_to {
+                        result.write_char('0').unwrap();
+                    }
+                    result.write_str(chapter).unwrap();
+                    result
+                })
+                .into_owned()
+        } else {
+            episode.name
+        };
+        write!(&mut link_name, " {}", episode.id).unwrap();
+        let file_path = PathBuf::from(&episode.file);
+        if let Some(extension) = file_path.extension() {
+            write!(&mut link_name, ".{}", extension.to_str().unwrap()).unwrap();
+        }
+        let link_path = links_dir_path.join(&link_name);
+        if let (Some(adjacents), Some(series_adjacents)) = (
+            all_adjacent_files.get(&file_path.with_extension("")),
+            series_to_adjacent_types.get(&episode.series),
+        ) {
+            for extension in adjacents {
+                if !series_adjacents.contains(*extension) {
+                    continue;
+                }
+                let adjacent_target = file_path.with_extension(extension);
+                let adjacent_link = link_path.with_extension(extension);
+                desired_links.insert(adjacent_link, adjacent_target);
             }
-            (link_name, episode.file)
-        })
-        .collect::<HashMap<_, _>>();
-
-    log::info!("{:?}", desired_links);
+        }
+        desired_links.insert(link_path, file_path);
+    }
 
     let read_dir_result = ReadDirStream::new(fs::read_dir(links_dir_path).await.unwrap());
     let existing_files: Vec<_> = read_dir_result.try_collect().await.unwrap();
 
     for file in existing_files {
-        let file_name = file.file_name();
-        if desired_links.remove(file_name.to_str().unwrap()).is_none() {
+        let file_name = file.path();
+        if desired_links.remove(&file_name).is_none() {
             log::debug!("Removing {:?}", file);
             fs::remove_file(file.path()).await.unwrap();
         }
     }
 
-    for (link_name, link_target) in desired_links {
-        let link_path = links_dir_path.join(link_name);
-        log::debug!("Linking {:?} to {}", link_path, link_target);
+    for (link_path, link_target) in desired_links {
+        log::debug!("Linking {:?} to {:?}", link_path, link_target);
         fs::symlink(link_target, link_path).await.unwrap();
     }
     Ok(())
