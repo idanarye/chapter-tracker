@@ -1,9 +1,9 @@
 #[derive(actix::Message)]
-#[rtype(result="anyhow::Result<Vec<crate::files_discovery::FoundFile>>")]
+#[rtype(result = "anyhow::Result<Vec<crate::files_discovery::FoundFile>>")]
 pub struct DiscoverFiles;
 
 #[derive(actix::Message)]
-#[rtype(result="anyhow::Result<()>")]
+#[rtype(result = "anyhow::Result<()>")]
 pub struct FindAndRemoveDanglingFiles;
 
 pub struct RequestConnection;
@@ -13,7 +13,7 @@ impl actix::Message for RequestConnection {
 }
 
 #[derive(actix::Message)]
-#[rtype(result="anyhow::Result<()>")]
+#[rtype(result = "anyhow::Result<()>")]
 pub struct RefreshList<T, Id, FId, A>
 where
     A: actix::Actor,
@@ -25,5 +25,5 @@ where
 }
 
 #[derive(actix::Message)]
-#[rtype(result="()")]
+#[rtype(result = "()")]
 pub struct UpdateListRowData<T>(pub Vec<T>);

@@ -5,22 +5,16 @@ T = require'idan.project.rust'(T, {
     crate_name = 'chapter_tracker',
 })
 
---function T:check()
-    --vim.cmd'Erun! cargo check -q --examples'
---end
+local blunder = require'blunder'
+local channelot = require'channelot'
 
---function T:build()
-    --vim.cmd[[
-    --botright new
-    --terminal cargo build --examples
-    --startinsert
-    --]]
---end
-
---function T:run()
-    --vim.cmd[[
-    --botright new
-    --terminal RUST_BACKTRACE=1 RUST_LOG=chapter_tracker=debug cargo run -- --linksdir episodes-links
-    --startinsert
-    --]]
---end
+function T:add_migration()
+    local migration_name = moonicipal.input { prompt = 'Migration Name> ' } or moonicipal.abort()
+    if migration_name == '' then
+        return
+    end
+    blunder.create_window_for_terminal()
+    channelot.terminal_job({
+        DATABASE_URL='sqlite:chapter_tracker.db3',
+    }, {'sqlx', 'migrate', 'add', migration_name})
+end

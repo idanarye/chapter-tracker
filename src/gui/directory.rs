@@ -40,31 +40,38 @@ impl actix::Actor for DirectoryActor {
 
     fn started(&mut self, _ctx: &mut Self::Context) {
         self.update_widgets_from_model();
-        self.widgets.srt_directory_scan_preview.set_default_sort_func(|mdl, it1, it2| {
-            let parse_column = |it, column| mdl.value(it, column).get::<String>().ok().and_then(|s| s.parse::<i64>().ok());
-            let chap1 = parse_column(it1, 1);
-            let chap2 = parse_column(it2, 1);
-            match (chap1, chap2) {
-                (Some(_), None) => core::cmp::Ordering::Less,
-                (None, Some(_)) => core::cmp::Ordering::Greater,
-                (None, None) => {
-                    let file1 = mdl.value(it1, 0).get::<String>().ok();
-                    let file2 = mdl.value(it2, 0).get::<String>().ok();
-                    file1.cmp(&file2)
-                }
-                (Some(chap1), Some(chap2)) => {
-                    let vol1 = parse_column(it1, 2);
-                    let vol2 = parse_column(it2, 2);
-                    match (vol1, vol2) {
-                        (None, None) => chap1.cmp(&chap2),
-                        (Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
-                        // These two shouldn't happen, but still:
-                        (Some(_), None) => core::cmp::Ordering::Less,
-                        (None, Some(_)) => core::cmp::Ordering::Greater,
+        self.widgets
+            .srt_directory_scan_preview
+            .set_default_sort_func(|mdl, it1, it2| {
+                let parse_column = |it, column| {
+                    mdl.value(it, column)
+                        .get::<String>()
+                        .ok()
+                        .and_then(|s| s.parse::<i64>().ok())
+                };
+                let chap1 = parse_column(it1, 1);
+                let chap2 = parse_column(it2, 1);
+                match (chap1, chap2) {
+                    (Some(_), None) => core::cmp::Ordering::Less,
+                    (None, Some(_)) => core::cmp::Ordering::Greater,
+                    (None, None) => {
+                        let file1 = mdl.value(it1, 0).get::<String>().ok();
+                        let file2 = mdl.value(it2, 0).get::<String>().ok();
+                        file1.cmp(&file2)
+                    }
+                    (Some(chap1), Some(chap2)) => {
+                        let vol1 = parse_column(it1, 2);
+                        let vol2 = parse_column(it2, 2);
+                        match (vol1, vol2) {
+                            (None, None) => chap1.cmp(&chap2),
+                            (Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
+                            // These two shouldn't happen, but still:
+                            (Some(_), None) => core::cmp::Ordering::Less,
+                            (None, Some(_)) => core::cmp::Ordering::Greater,
+                        }
                     }
                 }
-            }
-        });
+            });
     }
 }
 
@@ -73,12 +80,20 @@ impl DirectoryActor {
         self.widgets.set_props(&DirectoryWidgetsPropSetter {
             txt_directory_pattern: &self.model.pattern,
             txt_directory_dir: &self.model.dir,
-            txt_directory_volume: &self.model.volume.map(|v| v.to_string()).unwrap_or("".to_owned()),
+            txt_directory_volume: &self
+                .model
+                .volume
+                .map(|v| v.to_string())
+                .unwrap_or("".to_owned()),
             chk_directory_recursive: self.model.recursive,
         });
     }
 
-    fn add_verifications_to_edit_mode(&self, ctx: &mut actix::Context<Self>, edit_mode: EditMode) -> EditMode {
+    fn add_verifications_to_edit_mode(
+        &self,
+        ctx: &mut actix::Context<Self>,
+        edit_mode: EditMode,
+    ) -> EditMode {
         let (tx, rx) = tokio::sync::mpsc::channel(16);
         ctx.add_stream(tokio_stream::wrappers::ReceiverStream::new(rx));
         edit_mode.with_edit_widget(self.widgets.txt_directory_pattern.clone(), "changed", self.model.pattern.clone(), {
@@ -148,17 +163,27 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                 if self.widgets.txt_directory_dir.is_editable() {
                     let txt_directory_dir = self.widgets.txt_directory_dir.clone();
                     let series = self.series.clone();
-                    ctx.spawn(async move {
-                        let base_dir = series.send(crate::gui::msgs::GetBaseDirForMediaType).await.unwrap();
-                        let base_dir = match base_dir {
-                            Ok(base_dir) => Some(base_dir),
-                            Err(err) => {
-                                log::warn!("Cannot find base dir: {}", err);
-                                None
-                            }
-                        };
-                        crate::util::dialogs::run_set_directory_dialog(txt_directory_dir, base_dir).await;
-                    }.into_actor(self));
+                    ctx.spawn(
+                        async move {
+                            let base_dir = series
+                                .send(crate::gui::msgs::GetBaseDirForMediaType)
+                                .await
+                                .unwrap();
+                            let base_dir = match base_dir {
+                                Ok(base_dir) => Some(base_dir),
+                                Err(err) => {
+                                    log::warn!("Cannot find base dir: {}", err);
+                                    None
+                                }
+                            };
+                            crate::util::dialogs::run_set_directory_dialog(
+                                txt_directory_dir,
+                                base_dir,
+                            )
+                            .await;
+                        }
+                        .into_actor(self),
+                    );
                 }
                 None
             }
@@ -166,33 +191,37 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                 let edit_mode = self.add_verifications_to_edit_mode(
                     ctx,
                     EditMode::builder()
-                    .stack(self.widgets.stk_directory_buttons.clone())
-                    .save_button(self.widgets.btn_save_directory.clone())
-                    .cancel_button(self.widgets.btn_cancel_directory_edit.clone())
-                    .build()
+                        .stack(self.widgets.stk_directory_buttons.clone())
+                        .save_button(self.widgets.btn_save_directory.clone())
+                        .cancel_button(self.widgets.btn_cancel_directory_edit.clone())
+                        .build(),
                 );
                 ctx.spawn(
-                    edit_mode.edit_mode(ctx.address().recipient(), ())
-                    .into_actor(self)
-                    .then(move |user_saved, actor, _| {
-                        let directory_id = actor.model.id;
-                        async move {
-                            if user_saved.is_some() {
-                                let query = sqlx::query_as("SELECT * FROM directories WHERE id = ?").bind(directory_id);
-                                let mut con = db::request_connection().await.unwrap();
-                                Some(query.fetch_one(&mut con).await.unwrap())
-                            } else {
-                                None
+                    edit_mode
+                        .edit_mode(ctx.address().recipient(), ())
+                        .into_actor(self)
+                        .then(move |user_saved, actor, _| {
+                            let directory_id = actor.model.id;
+                            async move {
+                                if user_saved.is_some() {
+                                    let query =
+                                        sqlx::query_as("SELECT * FROM directories WHERE id = ?")
+                                            .bind(directory_id);
+                                    let mut con = db::request_connection().await.unwrap();
+                                    Some(query.fetch_one(&mut con).await.unwrap())
+                                } else {
+                                    None
+                                }
                             }
-                        }.into_actor(actor)
-                    })
-                    .then(|result, actor, _| {
-                        if let Some(result) = result {
-                            actor.model = result;
-                            actor.update_widgets_from_model();
-                        }
-                        futures::future::ready(())
-                    })
+                            .into_actor(actor)
+                        })
+                        .then(|result, actor, _| {
+                            if let Some(result) = result {
+                                actor.model = result;
+                                actor.update_widgets_from_model();
+                            }
+                            futures::future::ready(())
+                        }),
                 );
                 None
             }
@@ -202,27 +231,33 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                     gtk::DialogFlags::MODAL,
                     gtk::MessageType::Warning,
                     gtk::ButtonsType::YesNo,
-                    &format!("Are you sure you want to delete {:?} on {:?}?", self.model.pattern, self.model.dir),
+                    &format!(
+                        "Are you sure you want to delete {:?} on {:?}?",
+                        self.model.pattern, self.model.dir
+                    ),
                 );
                 let directory_id = self.model.id;
                 let addr = ctx.address();
-                ctx.spawn(async move {
-                    let result = woab::run_dialog(
-                        &dialog,
-                        true,
-                    ).await;
-                    if result != gtk::ResponseType::Yes {
-                        return;
-                    }
-                    let query = sqlx::query(r#"
+                ctx.spawn(
+                    async move {
+                        let result = woab::run_dialog(&dialog, true).await;
+                        if result != gtk::ResponseType::Yes {
+                            return;
+                        }
+                        let query = sqlx::query(
+                            r#"
                             DELETE FROM directories WHERE id = ?;
-                        "#).bind(directory_id);
-                    {
-                        let mut con = db::request_connection().await.unwrap();
-                        query.execute(&mut con).await.unwrap();
+                        "#,
+                        )
+                        .bind(directory_id);
+                        {
+                            let mut con = db::request_connection().await.unwrap();
+                            query.execute(&mut con).await.unwrap();
+                        }
+                        addr.send(woab::Remove).await.unwrap();
                     }
-                    addr.send(woab::Remove).await.unwrap();
-                }.into_actor(self));
+                    .into_actor(self),
+                );
                 None
             }
             _ => msg.cant_handle()?,
@@ -233,7 +268,11 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
 impl actix::Handler<crate::gui::msgs::UpdateModel<models::Directory>> for DirectoryActor {
     type Result = ();
 
-    fn handle(&mut self, msg: crate::gui::msgs::UpdateModel<models::Directory>, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(
+        &mut self,
+        msg: crate::gui::msgs::UpdateModel<models::Directory>,
+        _ctx: &mut Self::Context,
+    ) -> Self::Result {
         let crate::gui::msgs::UpdateModel(data) = msg;
         self.model = data;
         self.update_widgets_from_model();
@@ -243,7 +282,11 @@ impl actix::Handler<crate::gui::msgs::UpdateModel<models::Directory>> for Direct
 impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
     type Result = actix::ResponseActFuture<Self, anyhow::Result<i64>>;
 
-    fn handle(&mut self, _msg: crate::util::edit_mode::InitiateSave, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(
+        &mut self,
+        _msg: crate::util::edit_mode::InitiateSave,
+        _ctx: &mut Self::Context,
+    ) -> Self::Result {
         let directory_id = self.model.id;
         let series_id = self.model.series;
         let DirectoryWidgetsPropGetter {
@@ -301,40 +344,49 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
 impl actix::Handler<crate::gui::msgs::InitiateNewRowSequence> for DirectoryActor {
     type Result = ();
 
-    fn handle(&mut self, _msg: crate::gui::msgs::InitiateNewRowSequence, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(
+        &mut self,
+        _msg: crate::gui::msgs::InitiateNewRowSequence,
+        ctx: &mut Self::Context,
+    ) -> Self::Result {
         let edit_mode = self.add_verifications_to_edit_mode(
             ctx,
             EditMode::builder()
-            .stack(self.widgets.stk_directory_buttons.clone())
-            .stack_page("new")
-            .save_button(self.widgets.btn_save_new_directory.clone())
-            .build()
+                .stack(self.widgets.stk_directory_buttons.clone())
+                .stack_page("new")
+                .save_button(self.widgets.btn_save_new_directory.clone())
+                .build(),
         );
         ctx.spawn(
-            edit_mode.edit_mode(ctx.address().recipient(), ())
-            .into_actor(self)
-            .then(move |user_saved, actor, _| {
-                async move {
-                    if let Some(directory_id) = user_saved {
-                        let query = sqlx::query_as("SELECT * FROM directories WHERE id = ?").bind(directory_id);
-                        let mut con = db::request_connection().await.unwrap();
-                        Some(query.fetch_one(&mut con).await.unwrap())
-                    } else {
-                        None
+            edit_mode
+                .edit_mode(ctx.address().recipient(), ())
+                .into_actor(self)
+                .then(move |user_saved, actor, _| {
+                    async move {
+                        if let Some(directory_id) = user_saved {
+                            let query = sqlx::query_as("SELECT * FROM directories WHERE id = ?")
+                                .bind(directory_id);
+                            let mut con = db::request_connection().await.unwrap();
+                            Some(query.fetch_one(&mut con).await.unwrap())
+                        } else {
+                            None
+                        }
                     }
-                }.into_actor(actor)
-            })
-        .then(|result, actor, ctx| {
-            if let Some(result) = result {
-                actor.model = result;
-                actor.update_widgets_from_model();
-                actor.series.do_send(crate::gui::msgs::RegisterActorAfterNew {
-                    id: actor.model.id,
-                    addr: ctx.address(),
-                });
-            }
-            futures::future::ready(())
-        })
+                    .into_actor(actor)
+                })
+                .then(|result, actor, ctx| {
+                    if let Some(result) = result {
+                        actor.model = result;
+                        actor.update_widgets_from_model();
+                        actor
+                            .series
+                            .do_send(crate::gui::msgs::RegisterActorAfterNew {
+                                id: actor.model.id,
+                                addr: ctx.address(),
+                            });
+                    }
+                    futures::future::ready(())
+                }),
         );
     }
 }
@@ -353,27 +405,40 @@ impl actix::StreamHandler<PreviewEvent> for DirectoryActor {
                     txt_directory_pattern: _,
                     txt_directory_dir,
                     txt_directory_volume: _,
-                    chk_directory_recursive
+                    chk_directory_recursive,
                 } = self.widgets.get_props();
-                ctx.spawn(async move {
-                    let mut con = db::request_connection().await.unwrap();
-                    match crate::files_discovery::discover_in_path(&mut con, &txt_directory_dir, chk_directory_recursive).await {
-                        Ok(paths) => Some(paths),
-                        Err(err) => {
-                            log::warn!("Cannot discover files in {:?} - {}", txt_directory_dir, err);
-                            None
+                ctx.spawn(
+                    async move {
+                        let mut con = db::request_connection().await.unwrap();
+                        match crate::files_discovery::discover_in_path(
+                            &mut con,
+                            &txt_directory_dir,
+                            chk_directory_recursive,
+                        )
+                        .await
+                        {
+                            Ok(paths) => Some(paths),
+                            Err(err) => {
+                                log::warn!(
+                                    "Cannot discover files in {:?} - {}",
+                                    txt_directory_dir,
+                                    err
+                                );
+                                None
+                            }
                         }
                     }
-                }.into_actor(self)
-                .map(|paths, actor, _ctx| {
-                    let paths = if let Some(paths) = paths {
-                        paths
-                    } else {
-                        return;
-                    };
-                    actor.preview_unfiltered_paths = paths;
-                    actor.apply_pattern_to_preview();
-                }));
+                    .into_actor(self)
+                    .map(|paths, actor, _ctx| {
+                        let paths = if let Some(paths) = paths {
+                            paths
+                        } else {
+                            return;
+                        };
+                        actor.preview_unfiltered_paths = paths;
+                        actor.apply_pattern_to_preview();
+                    }),
+                );
             }
             PreviewEvent::PatternChanged => {
                 self.apply_pattern_to_preview();
@@ -381,8 +446,7 @@ impl actix::StreamHandler<PreviewEvent> for DirectoryActor {
         }
     }
 
-    fn finished(&mut self, _ctx: &mut Self::Context) {
-    }
+    fn finished(&mut self, _ctx: &mut Self::Context) {}
 }
 
 impl DirectoryActor {

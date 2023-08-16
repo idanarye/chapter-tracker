@@ -21,7 +21,13 @@ impl EditMode {
         self.restoration_callbacks.push(Box::new(callback));
         self
     }
-    pub fn with_edit_widget<W, T>(mut self, widget: W, widget_update_signal: &str, saved_value: T, validate: impl Fn(&T) -> Result<(), String> + 'static) -> Self
+    pub fn with_edit_widget<W, T>(
+        mut self,
+        widget: W,
+        widget_update_signal: &str,
+        saved_value: T,
+        validate: impl Fn(&T) -> Result<(), String> + 'static,
+    ) -> Self
     where
         W: glib::ObjectExt,
         W: glib::IsA<gtk::Widget>,
@@ -43,27 +49,28 @@ impl EditMode {
             widget.set_tooltip_text(Some(&err));
             widget.style_context().add_class("bad-input");
         }
-        let signal_handler_id = widget.connect_local(widget_update_signal, false, {
-            let widget = widget.clone();
-            move |_args| {
-                let style_context = widget.style_context();
-                let value = widget.get_value();
-                if value == saved_value {
-                    style_context.remove_class("unsaved-change");
-                } else {
-                    style_context.add_class("unsaved-change");
+        let signal_handler_id = widget
+            .connect_local(widget_update_signal, false, {
+                let widget = widget.clone();
+                move |_args| {
+                    let style_context = widget.style_context();
+                    let value = widget.get_value();
+                    if value == saved_value {
+                        style_context.remove_class("unsaved-change");
+                    } else {
+                        style_context.add_class("unsaved-change");
+                    }
+                    if let Err(err) = validate(&value) {
+                        widget.set_tooltip_text(Some(&err));
+                        style_context.add_class("bad-input");
+                    } else {
+                        widget.set_tooltip_text(None);
+                        style_context.remove_class("bad-input");
+                    }
+                    None
                 }
-                if let Err(err) = validate(&value) {
-                    widget.set_tooltip_text(Some(&err));
-                    style_context.add_class("bad-input");
-                } else {
-                    widget.set_tooltip_text(None);
-                    style_context.remove_class("bad-input");
-                }
-                None
-            }
-        }
-        ).unwrap();
+            })
+            .unwrap();
         widget.set_editability(true);
         widget.style_context().add_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
@@ -78,8 +85,14 @@ impl EditMode {
         self
     }
 
-    pub async fn edit_mode<T: Send + Clone + 'static>(mut self, save_handler: actix::Recipient<InitiateSave<T>>, tag: T) -> Option<i64> {
-        self.stack.set_property("visible-child-name", &self.stack_page).unwrap();
+    pub async fn edit_mode<T: Send + Clone + 'static>(
+        mut self,
+        save_handler: actix::Recipient<InitiateSave<T>>,
+        tag: T,
+    ) -> Option<i64> {
+        self.stack
+            .set_property("visible-child-name", &self.stack_page)
+            .unwrap();
         let result = {
             let widgets = core::mem::replace(&mut self.widgets, Default::default());
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
@@ -94,7 +107,8 @@ impl EditMode {
                     let tag = tag.clone();
                     woab::block_on(async move {
                         actix::spawn(async move {
-                            let should_save = save_handler.send(InitiateSave(tag.clone())).await.unwrap();
+                            let should_save =
+                                save_handler.send(InitiateSave(tag.clone())).await.unwrap();
                             match should_save {
                                 Ok(rowid) => {
                                     let _ = tx.try_send(rowid);
@@ -123,7 +137,9 @@ impl EditMode {
                 save_fut.await.ok()
             }
         };
-        self.stack.set_property("visible-child-name", &"normal").unwrap();
+        self.stack
+            .set_property("visible-child-name", &"normal")
+            .unwrap();
         for callback in self.restoration_callbacks {
             callback();
         }

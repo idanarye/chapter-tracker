@@ -5,7 +5,10 @@ pub async fn run_set_directory_dialog(widget: gtk::Entry, base_dir: Option<Strin
         None,
         None,
         gtk::FileChooserAction::CreateFolder,
-        &[("_Cancel", gtk::ResponseType::Cancel), ("_Select", gtk::ResponseType::Accept)],
+        &[
+            ("_Cancel", gtk::ResponseType::Cancel),
+            ("_Select", gtk::ResponseType::Accept),
+        ],
     );
     let current_choice = widget.text();
     if current_choice.is_empty() {

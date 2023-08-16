@@ -1,12 +1,12 @@
 use actix::prelude::*;
 use gio::prelude::*;
 
-mod msgs;
-mod main_app;
-mod series;
 mod directory;
-mod media_types;
 mod links_dir;
+mod main_app;
+mod media_types;
+mod msgs;
+mod series;
 
 pub fn start_gui() -> anyhow::Result<i32> {
     use structopt::StructOpt;
@@ -15,7 +15,9 @@ pub fn start_gui() -> anyhow::Result<i32> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
-    let factories = Factories::new(FactoriesInner::read(&*crate::Asset::get("gui.glade").unwrap())?);
+    let factories = Factories::new(FactoriesInner::read(
+        &*crate::Asset::get("gui.glade").unwrap(),
+    )?);
 
     let app = gtk::Application::new(None, gio::ApplicationFlags::HANDLES_COMMAND_LINE);
     woab::block_on(async {
@@ -26,17 +28,17 @@ pub fn start_gui() -> anyhow::Result<i32> {
             .build()
             .start();
         // app.add_main_option(
-            // "linksdir",
-            // b'd'.into(),
-            // glib::OptionFlags::empty(),
-            // glib::OptionArg::FilenameArray,
-            // "Maintain directories with symlinks to the unread files",
-            // None,
+        // "linksdir",
+        // b'd'.into(),
+        // glib::OptionFlags::empty(),
+        // glib::OptionArg::FilenameArray,
+        // "Maintain directories with symlinks to the unread files",
+        // None,
         // );
         // app.connect_handle_local_options(|app, options| {
-            // println!("Got {:?}", options.lookup_value("linksdir", None));
-            // app.activate();
-            // 0
+        // println!("Got {:?}", options.lookup_value("linksdir", None));
+        // app.activate();
+        // 0
         // });
         app.connect_command_line(|app, _| {
             app.activate();
