@@ -3,6 +3,11 @@ local T = moonicipal.tasks_file()
 
 T = require'idan.project.rust'(T, {
     crate_name = 'chapter_tracker',
+    cli_args_for_targets = {
+        ['chapter-tracker'] = {
+            {'--linksdir', 'episodes-links'},
+        }
+    },
 })
 
 local blunder = require'blunder'

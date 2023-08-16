@@ -1,6 +1,7 @@
 pub mod actors;
 pub mod files_discovery;
 mod gui;
+pub mod links_handling;
 mod models;
 pub mod msgs;
 mod util;

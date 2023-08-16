@@ -9,6 +9,9 @@ use tokio_stream::wrappers::ReadDirStream;
 
 use sqlx::prelude::*;
 
+use crate::links_handling::{
+    prepare_media_type_to_adjacent_types_mapping, prepare_series_to_adjacent_types_mapping,
+};
 use crate::models;
 
 pub struct FoundFile {
@@ -21,33 +24,10 @@ pub struct FoundFile {
 pub async fn run_files_discovery(
     mut con: crate::SqlitePoolConnection,
 ) -> anyhow::Result<Vec<FoundFile>> {
-    let mut media_type_to_adjacent_types: HashMap<i64, HashSet<String>> = HashMap::new();
-    sqlx::query_as::<_, (i64, String)>("SELECT id, adjacent_file_types FROM media_types")
-        .fetch(&mut con)
-        .try_for_each(|(media_type_id, adjacent_file_types)| {
-            log::info!("id {} adjacent {}", media_type_id, adjacent_file_types);
-            media_type_to_adjacent_types.insert(
-                media_type_id,
-                adjacent_file_types
-                    .split_whitespace()
-                    .map(|ft| ft.to_owned())
-                    .collect(),
-            );
-            futures::future::ready(Ok(()))
-        })
-        .await?;
-    log::info!("{:?}", media_type_to_adjacent_types);
-
-    let mut series_to_adjacent_types: HashMap<i64, &HashSet<String>> = HashMap::new();
-    sqlx::query_as::<_, (i64, i64)>("SELECT id, media_type FROM serieses")
-        .fetch(&mut con)
-        .try_for_each(|(series_id, media_type_id)| {
-            if let Some(adjacent_file_types) = media_type_to_adjacent_types.get(&media_type_id) {
-                series_to_adjacent_types.insert(series_id, adjacent_file_types);
-            }
-            futures::future::ready(Ok(()))
-        })
-        .await?;
+    let media_type_to_adjacent_types =
+        prepare_media_type_to_adjacent_types_mapping(&mut con).await?;
+    let series_to_adjacent_types =
+        prepare_series_to_adjacent_types_mapping(&mut con, &media_type_to_adjacent_types).await?;
     log::info!("{:?}", series_to_adjacent_types);
 
     let mut directories = HashMap::<(String, bool), Vec<models::Directory>>::new();
@@ -81,7 +61,10 @@ pub async fn run_files_discovery(
                 let directory = &directories[index];
 
                 if let Some(adjacent_file_types) = series_to_adjacent_types.get(&directory.series) {
-                    if let Some(extension) = std::path::Path::new(&new_file).extension().and_then(|ext| ext.to_str()) {
+                    if let Some(extension) = std::path::Path::new(&new_file)
+                        .extension()
+                        .and_then(|ext| ext.to_str())
+                    {
                         if adjacent_file_types.contains(extension) {
                             continue;
                         }
