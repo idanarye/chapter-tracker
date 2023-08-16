@@ -61,10 +61,10 @@ pub async fn refresh_links_directory(
         AND media_types.maintain_symlinks
         "#,
     );
-    let unread_episodes: Vec<models::Episode> = query.fetch(con).try_collect().await.unwrap();
+    let unread_episodes: Vec<models::Episode> = query.fetch(con).try_collect().await?;
 
     // TODO: Generate names from scratch and get rid of this regex usage...
-    let chapter_pattern = regex::Regex::new(r#"c(\d+)$"#).unwrap();
+    let chapter_pattern = regex::Regex::new(r#"c(\d+)$"#)?;
 
     let mut pad_series_chapters_to = HashMap::<i64, usize>::new();
 
@@ -98,10 +98,10 @@ pub async fn refresh_links_directory(
             .collect();
 
         for directory in directories_with_unread_episodes.iter() {
-            let mut reader = fs::read_dir(directory).await.unwrap();
+            let mut reader = fs::read_dir(directory).await?;
             while let Some(dirent) = reader.next_entry().await? {
                 let file_path = dirent.path();
-                let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) else { return Ok(()) };
+                let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) else { continue };
                 if let Some(extension) = all_potential_adjacent_suffixes.get(extension) {
                     let file_without_extension = file_path.with_extension("");
                     all_adjacent_files
@@ -131,7 +131,7 @@ pub async fn refresh_links_directory(
         } else {
             episode.name
         };
-        write!(&mut link_name, " {}", episode.id).unwrap();
+        write!(&mut link_name, " {}", episode.id)?;
         let file_path = PathBuf::from(&episode.file);
         if let Some(extension) = file_path.extension() {
             write!(&mut link_name, ".{}", extension.to_str().unwrap()).unwrap();
@@ -153,14 +153,14 @@ pub async fn refresh_links_directory(
         desired_links.insert(link_path, file_path);
     }
 
-    let read_dir_result = ReadDirStream::new(fs::read_dir(links_dir_path).await.unwrap());
-    let existing_files: Vec<_> = read_dir_result.try_collect().await.unwrap();
+    let read_dir_result = ReadDirStream::new(fs::read_dir(links_dir_path).await?);
+    let existing_files: Vec<_> = read_dir_result.try_collect().await?;
 
     for file in existing_files {
         let file_name = file.path();
         if desired_links.remove(&file_name).is_none() {
             log::debug!("Removing {:?}", file);
-            fs::remove_file(file.path()).await.unwrap();
+            fs::remove_file(file.path()).await?;
         }
     }
 
