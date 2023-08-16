@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 -->
+<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
   <!-- interface-css-provider-path default.css -->
@@ -1010,6 +1010,7 @@
                   <object class="GtkEntry" id="txt_media_type_name">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="tooltip-text" translatable="yes">Name</property>
                     <property name="editable">False</property>
                   </object>
                   <packing>
@@ -1021,6 +1022,7 @@
                   <object class="GtkEntry" id="txt_media_type_base_dir">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="tooltip-text" translatable="yes">Base directory</property>
                     <property name="editable">False</property>
                     <property name="primary-icon-stock">gtk-directory</property>
                     <property name="secondary-icon-stock">gtk-clear</property>
@@ -1141,6 +1143,7 @@
                   <object class="GtkEntry" id="txt_media_type_file_types">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="tooltip-text" translatable="yes">File types</property>
                     <property name="editable">False</property>
                   </object>
                   <packing>
@@ -1152,6 +1155,7 @@
                   <object class="GtkEntry" id="txt_media_type_program">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="tooltip-text" translatable="yes">Program</property>
                     <property name="editable">False</property>
                   </object>
                   <packing>
