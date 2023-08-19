@@ -3,6 +3,8 @@ use gtk::prelude::*;
 
 use hashbrown::HashMap;
 
+use sqlx::prelude::*;
+
 use crate::gui::directory::{DirectoryActor, DirectoryWidgets};
 use crate::models;
 use crate::util::db;
@@ -124,7 +126,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                                 let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?")
                                     .bind(series_id);
                                 let mut con = db::request_connection().await.unwrap();
-                                Some(query.fetch_one(&mut con).await.unwrap())
+                                Some(query.fetch_one(con.acquire().await.unwrap()).await.unwrap())
                             } else {
                                 None
                             }
@@ -169,7 +171,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                         .bind(series_id);
                         {
                             let mut con = db::request_connection().await.unwrap();
-                            query.execute(&mut con).await.unwrap();
+                            query.execute(con.acquire().await.unwrap()).await.unwrap();
                         }
                         addr.send(woab::Remove).await.unwrap();
                     }
@@ -276,7 +278,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
                     .bind(txt_download_command)
                     .bind(txt_download_command_dir);
                     let mut con = db::request_connection().await?;
-                    let query_result = query.execute(&mut con).await?;
+                    let query_result = query.execute(con.acquire().await?).await?;
                     Ok(query_result.last_insert_rowid())
                 } else {
                     let query = sqlx::query(
@@ -295,7 +297,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
                     .bind(txt_download_command_dir)
                     .bind(series_id);
                     let mut con = db::request_connection().await?;
-                    let query_result = query.execute(&mut con).await?;
+                    let query_result = query.execute(con.acquire().await?).await?;
                     if query_result.rows_affected() == 0 {
                         anyhow::bail!("Affected 0 serieses with id={}", series_id);
                     }
@@ -356,7 +358,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                             "UPDATE episodes SET date_of_read = datetime() WHERE id == ?",
                         )
                         .bind(episode_id);
-                        query.execute(&mut con).await.unwrap();
+                        query.execute(con.acquire().await.unwrap()).await.unwrap();
                     }
                     .into_actor(self)
                     .then(move |_, actor, ctx| {
@@ -377,7 +379,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                         let query =
                             sqlx::query("UPDATE episodes SET date_of_read = NULL WHERE id == ?")
                                 .bind(episode_id);
-                        query.execute(&mut con).await.unwrap();
+                        query.execute(con.acquire().await.unwrap()).await.unwrap();
                     }
                     .into_actor(self)
                     .then(move |_, actor, ctx| {
@@ -471,7 +473,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                         )
                         .bind(episode_id);
                         let mut con = db::request_connection().await.unwrap();
-                        query.execute(&mut con).await.unwrap();
+                        query.execute(con.acquire().await.unwrap()).await.unwrap();
                         lst_episodes.remove(&row_episode);
                     }
                     .into_actor(self),
@@ -492,7 +494,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                     "#,
                         )
                         .bind(series_id)
-                        .fetch_one(&mut con)
+                        .fetch_one(con.acquire().await.unwrap())
                         .await
                         .unwrap();
                         program
@@ -556,7 +558,7 @@ impl SeriesActor {
         ctx.spawn(
             async move {
                 let mut con = db::request_connection().await.unwrap();
-                query.fetch_one(&mut con).await.unwrap()
+                query.fetch_one(con.acquire().await.unwrap()).await.unwrap()
             }
             .into_actor(self)
             .then(move |result, actor, _ctx| {
@@ -773,7 +775,7 @@ impl actix::Handler<crate::gui::msgs::InitiateNewRowSequence> for SeriesActor {
                         let query = sqlx::query_as("SELECT * FROM serieses WHERE id = ?")
                             .bind(directory_id);
                         let mut con = db::request_connection().await.unwrap();
-                        Some(query.fetch_one(&mut con).await.unwrap())
+                        Some(query.fetch_one(con.acquire().await.unwrap()).await.unwrap())
                     } else {
                         None
                     }
@@ -811,7 +813,7 @@ impl actix::Handler<crate::gui::msgs::GetBaseDirForMediaType> for SeriesActor {
                 let query = sqlx::query_as("SELECT base_dir FROM media_types WHERE id = ?")
                     .bind(media_type);
                 let mut con = db::request_connection().await?;
-                let (base_dir,) = query.fetch_one(&mut con).await?;
+                let (base_dir,) = query.fetch_one(con.acquire().await?).await?;
                 Ok(base_dir)
             }
             .into_actor(self),
@@ -923,7 +925,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
                 .bind(txt_file)
                 .bind(episode_id);
                 let mut con = db::request_connection().await?;
-                query.execute(&mut con).await?;
+                query.execute(con.acquire().await?).await?;
                 Ok(episode_id)
             }
             .into_actor(self),

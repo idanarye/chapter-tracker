@@ -235,7 +235,7 @@ impl MainAppActor {
         use futures::stream::StreamExt;
         let mut series_map = hashbrown::HashMap::<i64, String>::new();
         sqlx::query_as::<_, (i64, String)>("SELECT id, name FROM serieses")
-            .fetch(&mut con)
+            .fetch(con.acquire().await?)
             .for_each(|row| {
                 let (id, name) = row.unwrap();
                 series_map.insert(id, name);
@@ -265,7 +265,7 @@ impl MainAppActor {
                     format!("{} c{}", series_map[&file.series], file.file_data.chapter)
                 })
                 .bind(file.path)
-                .execute(&mut con)
+                .execute(con.acquire().await?)
                 .await?;
         }
         Ok(())

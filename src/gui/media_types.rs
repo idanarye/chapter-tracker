@@ -5,6 +5,8 @@ use crate::models;
 use crate::util::db;
 use crate::util::edit_mode::EditMode;
 
+use sqlx::prelude::*;
+
 #[derive(typed_builder::TypedBuilder)]
 pub struct MediaTypesActor {
     factories: crate::gui::Factories,
@@ -140,7 +142,7 @@ impl MediaTypesActor {
                             let query = sqlx::query_as("SELECT * FROM media_types WHERE id = ?")
                                 .bind(media_type_id);
                             let mut con = db::request_connection().await.unwrap();
-                            Some(query.fetch_one(&mut con).await.unwrap())
+                            Some(query.fetch_one(con.acquire().await.unwrap()).await.unwrap())
                         } else {
                             None
                         }
@@ -319,7 +321,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                         let (num_serieses,): (i64,) =
                             sqlx::query_as("SELECT COUNT(*) FROM serieses WHERE media_type = ?")
                                 .bind(media_type_id)
-                                .fetch_one(&mut con)
+                                .fetch_one(con.acquire().await.unwrap())
                                 .await
                                 .unwrap();
                         if 0 < num_serieses {
@@ -356,7 +358,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                             if user_decision == gtk::ResponseType::Yes {
                                 sqlx::query("DELETE FROM media_types WHERE id = ?")
                                     .bind(media_type_id)
-                                    .execute(&mut con)
+                                    .execute(con.acquire().await.unwrap())
                                     .await
                                     .unwrap();
                                 true
@@ -418,7 +420,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for MediaTypesAct
                     .bind(txt_media_type_program)
                     .bind(chk_media_type_maintain_symlinks);
                 let mut con = db::request_connection().await?;
-                let query_result = query.execute(&mut con).await?;
+                let query_result = query.execute(con.acquire().await?).await?;
                 Ok(query_result.last_insert_rowid())
             } else {
                 let query = sqlx::query(r#"
@@ -439,7 +441,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for MediaTypesAct
                     .bind(chk_media_type_maintain_symlinks)
                     .bind(media_type_id);
                 let mut con = db::request_connection().await?;
-                query.execute(&mut con).await?;
+                query.execute(con.acquire().await?).await?;
                 main_app.do_send(crate::gui::msgs::UpdateMediaTypesList);
                 Ok(media_type_id)
             }

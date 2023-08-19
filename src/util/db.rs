@@ -31,7 +31,7 @@ where
     actix::spawn(async move {
         let mut con = request_connection().await.unwrap();
         query
-            .fetch(&mut con)
+            .fetch(con.acquire().await.unwrap())
             .for_each(|item| {
                 tx.try_send(item).map_err(|_| "Unable to send").unwrap();
                 futures::future::ready(())

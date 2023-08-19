@@ -5,6 +5,8 @@ use crate::models;
 use crate::util::db;
 use crate::util::edit_mode::EditMode;
 
+use sqlx::prelude::*;
+
 #[derive(typed_builder::TypedBuilder, woab::Removable)]
 #[removable(self.widgets.row_directory)]
 pub struct DirectoryActor {
@@ -208,7 +210,12 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                                         sqlx::query_as("SELECT * FROM directories WHERE id = ?")
                                             .bind(directory_id);
                                     let mut con = db::request_connection().await.unwrap();
-                                    Some(query.fetch_one(&mut con).await.unwrap())
+                                    Some(
+                                        query
+                                            .fetch_one(con.acquire().await.unwrap())
+                                            .await
+                                            .unwrap(),
+                                    )
                                 } else {
                                     None
                                 }
@@ -252,7 +259,7 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                         .bind(directory_id);
                         {
                             let mut con = db::request_connection().await.unwrap();
-                            query.execute(&mut con).await.unwrap();
+                            query.execute(con.acquire().await.unwrap()).await.unwrap();
                         }
                         addr.send(woab::Remove).await.unwrap();
                     }
@@ -310,7 +317,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
                     })
                     .bind(chk_directory_recursive);
                 let mut con = db::request_connection().await?;
-                let query_result = query.execute(&mut con).await?;
+                let query_result = query.execute(con.acquire().await?).await?;
                 Ok(query_result.last_insert_rowid())
             } else {
                 let query = sqlx::query(r#"
@@ -331,7 +338,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
                     .bind(chk_directory_recursive)
                     .bind(directory_id);
                 let mut con = db::request_connection().await?;
-                let query_result = query.execute(&mut con).await?;
+                let query_result = query.execute(con.acquire().await?).await?;
                 if query_result.rows_affected() == 0 {
                     anyhow::bail!("Affected 0 directories with id={}", directory_id);
                 }
@@ -367,7 +374,7 @@ impl actix::Handler<crate::gui::msgs::InitiateNewRowSequence> for DirectoryActor
                             let query = sqlx::query_as("SELECT * FROM directories WHERE id = ?")
                                 .bind(directory_id);
                             let mut con = db::request_connection().await.unwrap();
-                            Some(query.fetch_one(&mut con).await.unwrap())
+                            Some(query.fetch_one(con.acquire().await.unwrap()).await.unwrap())
                         } else {
                             None
                         }

@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use futures::TryStreamExt;
 use hashbrown::{HashMap, HashSet};
+use sqlx::prelude::*;
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 
@@ -12,7 +13,7 @@ pub async fn prepare_media_type_to_adjacent_types_mapping(
 ) -> anyhow::Result<HashMap<i64, HashSet<String>>> {
     let mut mapping = HashMap::new();
     sqlx::query_as::<_, (i64, String)>("SELECT id, adjacent_file_types FROM media_types")
-        .fetch(con)
+        .fetch(con.acquire().await?)
         .try_for_each(|(media_type_id, adjacent_file_types)| {
             mapping.insert(
                 media_type_id,
@@ -33,7 +34,7 @@ pub async fn prepare_series_to_adjacent_types_mapping<'a>(
 ) -> anyhow::Result<HashMap<i64, &'a HashSet<String>>> {
     let mut mapping = HashMap::new();
     sqlx::query_as::<_, (i64, i64)>("SELECT id, media_type FROM serieses")
-        .fetch(con)
+        .fetch(con.acquire().await?)
         .try_for_each(|(series_id, media_type_id)| {
             if let Some(adjacent_file_types) = media_type_to_adjacent_types.get(&media_type_id) {
                 mapping.insert(series_id, adjacent_file_types);
@@ -61,7 +62,8 @@ pub async fn refresh_links_directory(
         AND media_types.maintain_symlinks
         "#,
     );
-    let unread_episodes: Vec<models::Episode> = query.fetch(con).try_collect().await?;
+    let unread_episodes: Vec<models::Episode> =
+        query.fetch(con.acquire().await?).try_collect().await?;
 
     // TODO: Generate names from scratch and get rid of this regex usage...
     let chapter_pattern = regex::Regex::new(r#"c(\d+)$"#)?;

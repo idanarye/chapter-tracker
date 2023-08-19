@@ -80,7 +80,7 @@ impl Handler<crate::msgs::FindAndRemoveDanglingFiles> for DbActor {
                     for dangling_file_id in dangling_file_ids.iter() {
                         sqlx::query("DELETE FROM episodes WHERE id == ?")
                             .bind(dangling_file_id)
-                            .execute(&mut tx)
+                            .execute(tx.acquire().await?)
                             .await?;
                     }
                     tx.commit().await?;
@@ -131,7 +131,7 @@ where
                         addr,
                     } = msg;
                     query
-                        .fetch(&mut con)
+                        .fetch(con.acquire().await?)
                         .filter_map(|data| async move {
                             match data {
                                 Ok(ok) => Some(ok),

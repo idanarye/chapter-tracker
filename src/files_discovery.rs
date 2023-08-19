@@ -31,7 +31,7 @@ pub async fn run_files_discovery(
     log::info!("{:?}", series_to_adjacent_types);
 
     let mut directories = HashMap::<(String, bool), Vec<models::Directory>>::new();
-    sqlx::query_as::<_, models::Directory>("SELECT id, series, replace(pattern, '(?<', '(?P<') AS pattern, dir, volume, recursive FROM directories").fetch(&mut con).try_for_each(|directory| {
+    sqlx::query_as::<_, models::Directory>("SELECT id, series, replace(pattern, '(?<', '(?P<') AS pattern, dir, volume, recursive FROM directories").fetch(con.acquire().await?).try_for_each(|directory| {
         if let Some(entry) = directories.get_mut(&(directory.dir.clone(), directory.recursive)) {
             entry.push(directory);
         } else {
@@ -151,7 +151,7 @@ pub async fn discover_in_path(
 ) -> anyhow::Result<Vec<String>> {
     let mut tx = con.begin().await?;
     sqlx::query("CREATE TEMP TABLE discovered_files(filename text)")
-        .execute(&mut tx)
+        .execute(tx.acquire().await?)
         .await?;
     let mut search_in = vec![path.to_owned()];
     while let Some(path) = search_in.pop() {
@@ -177,7 +177,7 @@ pub async fn discover_in_path(
             }
             sqlx::query("INSERT INTO discovered_files(filename) VALUES(?)")
                 .bind(file_path)
-                .execute(&mut tx)
+                .execute(tx.acquire().await?)
                 .await?;
         }
     }
@@ -189,7 +189,7 @@ pub async fn discover_in_path(
         WHERE episodes.file IS NULL
         "#,
     )
-    .fetch(&mut tx)
+    .fetch(tx.acquire().await?)
     .map_ok(|(filename,)| filename)
     .try_collect()
     .await?;
@@ -202,7 +202,7 @@ pub async fn run_dangling_files_scan(
 ) -> anyhow::Result<Vec<i64>> {
     let unread_episodes: Vec<models::Episode> =
         sqlx::query_as("SELECT * FROM episodes WHERE date_of_read IS NULL")
-            .fetch(con)
+            .fetch(con.acquire().await?)
             .try_collect()
             .await?;
     let mut file_to_id: HashMap<PathBuf, i64> = unread_episodes
