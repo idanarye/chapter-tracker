@@ -27,11 +27,7 @@ impl Default for DbActor {
                 .block_on(async {
                     use structopt::StructOpt;
                     let cli_args = crate::CliArgs::from_args();
-                    let dbfile = &cli_args
-                        .dbfile
-                        .as_ref()
-                        .map(String::as_str)
-                        .unwrap_or("chapter_tracker.db3");
+                    let dbfile = &cli_args.dbfile.as_deref().unwrap_or("chapter_tracker.db3");
                     let pool = SqlitePool::connect_with(
                         SqliteConnectOptions::from_str(&format!("sqlite:{dbfile}"))?
                             .create_if_missing(true),
@@ -56,9 +52,12 @@ impl Handler<crate::msgs::DiscoverFiles> for DbActor {
         _msg: crate::msgs::DiscoverFiles,
         _ctx: &mut Self::Context,
     ) -> Self::Result {
-        Box::pin(self.pool.acquire().then(|con| async move {
-            Ok(crate::files_discovery::run_files_discovery(con?).await?)
-        }).into_actor(self))
+        Box::pin(
+            self.pool
+                .acquire()
+                .then(|con| async move { crate::files_discovery::run_files_discovery(con?).await })
+                .into_actor(self),
+        )
     }
 }
 
@@ -145,7 +144,7 @@ where
                         .chunks(64)
                         .for_each(|chunk| {
                             for data in chunk.iter() {
-                                let id = id_dlg(&data);
+                                let id = id_dlg(data);
                                 orig_ids.remove(&id);
                             }
                             addr.send(crate::msgs::UpdateListRowData(chunk))

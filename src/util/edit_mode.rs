@@ -91,10 +91,10 @@ impl EditMode {
         tag: T,
     ) -> Option<i64> {
         self.stack
-            .set_property("visible-child-name", &self.stack_page)
+            .set_property("visible-child-name", self.stack_page)
             .unwrap();
         let result = {
-            let widgets = core::mem::replace(&mut self.widgets, Default::default());
+            let widgets = core::mem::take(&mut self.widgets);
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
                 self.save_button.connect_clicked(move |_| {
                     for widget in widgets.iter() {
@@ -138,7 +138,7 @@ impl EditMode {
             }
         };
         self.stack
-            .set_property("visible-child-name", &"normal")
+            .set_property("visible-child-name", "normal")
             .unwrap();
         for callback in self.restoration_callbacks {
             callback();

@@ -47,9 +47,7 @@ impl actix::Handler<woab::Signal> for MediaTypesActor {
     type Result = woab::SignalResult;
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
-        Ok(match msg.name() {
-            _ => msg.cant_handle()?,
-        })
+        msg.cant_handle()
     }
 }
 
@@ -214,7 +212,7 @@ impl MediaTypeRow {
                 "changed",
                 self.model.name.clone(),
                 |text| {
-                    if text == "" {
+                    if text.is_empty() {
                         Err("media type name cannot be empty".to_owned())
                     } else {
                         Ok(())
@@ -248,7 +246,7 @@ impl MediaTypeRow {
             .with_edit_widget(
                 self.widgets.chk_media_type_maintain_symlinks.clone(),
                 "toggled",
-                self.model.maintain_symlinks.clone(),
+                self.model.maintain_symlinks,
                 |_| Ok(()),
             )
     }

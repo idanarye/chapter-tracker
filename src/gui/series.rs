@@ -211,7 +211,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                     (_, gtk::EntryIconPosition::Primary) => {
                         let download_command = self.widgets.txt_download_command.text();
                         let download_command = download_command.as_str();
-                        if download_command != "" {
+                        if !download_command.is_empty() {
                             use std::process::Command;
                             let mut command = if cfg!(target_os = "windows") {
                                 let mut command = Command::new("cmd");
@@ -227,7 +227,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
 
                             let download_command_dir = self.widgets.txt_download_command_dir.text();
                             let download_command_dir = download_command_dir.as_str();
-                            if download_command_dir != "" {
+                            if !download_command_dir.is_empty() {
                                 command.current_dir(download_command_dir);
                             }
                             if let Err(err) = command.spawn() {
@@ -408,7 +408,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                                 .map(|s| s.to_string())
                                 .unwrap_or_else(|| "".to_owned()),
                             |text| {
-                                if text == "" {
+                                if text.is_empty() {
                                     return Ok(());
                                 }
                                 match text.parse::<i64>() {
@@ -534,18 +534,8 @@ impl SeriesActor {
         self.widgets.set_props(&SeriesWidgetsPropSetter {
             txt_series_name: &self.model.name,
             cbo_series_media_type: &self.model.media_type.to_string(),
-            txt_download_command: self
-                .model
-                .download_command
-                .as_ref()
-                .map(|s| s.as_str())
-                .unwrap_or(""),
-            txt_download_command_dir: self
-                .model
-                .download_command_dir
-                .as_ref()
-                .map(|s| s.as_str())
-                .unwrap_or(""),
+            txt_download_command: self.model.download_command.as_deref().unwrap_or(""),
+            txt_download_command_dir: self.model.download_command_dir.as_deref().unwrap_or(""),
         });
         self.widgets.tgl_series_unread.set_label(&format!(
             "{}/{}",
@@ -850,7 +840,7 @@ impl EpisodeRow {
             .stk_read_state
             .set_property(
                 "visible-child-name",
-                &if self.model.date_of_read.is_some() {
+                if self.model.date_of_read.is_some() {
                     "episode-is-read"
                 } else {
                     "episode-is-not-read"
@@ -923,7 +913,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
                 WHERE id == ?
             "#,
                 )
-                .bind(if txt_volume == "" {
+                .bind(if txt_volume.is_empty() {
                     None
                 } else {
                     Some(txt_volume.parse::<i64>()?)

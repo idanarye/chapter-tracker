@@ -16,7 +16,7 @@ pub fn start_gui() -> anyhow::Result<i32> {
     woab::run_actix_inside_gtk_event_loop();
 
     let factories = Factories::new(FactoriesInner::read(
-        &*crate::Asset::get("gui.glade").unwrap(),
+        &*crate::Asset::get("gui.glade").unwrap().data,
     )?);
 
     let app = gtk::Application::new(None, gio::ApplicationFlags::HANDLES_COMMAND_LINE);

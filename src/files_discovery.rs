@@ -78,7 +78,7 @@ pub async fn run_files_discovery(
                         &regex_cache[&index]
                     }
                 };
-                let decision = process_file_match(&new_file, &directory_regex)?
+                let decision = process_file_match(&new_file, directory_regex)?
                     .map(|d| d.with_default_volume(directory.volume));
                 if let Some(file_data) = decision {
                     result.push(FoundFile {
@@ -113,7 +113,7 @@ pub fn process_file_match(
     filename: &str,
     pattern: &regex::Regex,
 ) -> anyhow::Result<Option<FileData>> {
-    let captures = if let Some(captures) = pattern.captures(&filename) {
+    let captures = if let Some(captures) = pattern.captures(filename) {
         captures
     } else {
         return Ok(None);
@@ -136,7 +136,7 @@ pub fn process_file_match(
                 after_match
             );
             after_match
-                .split(|c: char| !c.is_digit(10))
+                .split(|c: char| !c.is_ascii_digit())
                 .find(|s| !s.is_empty())
                 .ok_or_else(|| anyhow::Error::msg("No match afer"))?
                 .parse()?

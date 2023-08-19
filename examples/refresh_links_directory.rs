@@ -6,7 +6,7 @@ use tokio::fs;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    flexi_logger::Logger::with_env_or_str("warn").start()?;
+    flexi_logger::Logger::try_with_env_or_str("warn")?.start()?;
     let pool = SqlitePool::connect("sqlite:chapter_tracker.db3").await?;
     let path = Path::new("episodes-links");
     fs::create_dir(path).await.or_else(|err| {

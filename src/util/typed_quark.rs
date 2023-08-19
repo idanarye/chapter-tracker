@@ -33,11 +33,12 @@ impl<T: 'static> TypedQuark<T> {
         unsafe { obj.qdata(self.quark).map(|qd| qd.as_ref()) }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn gen_sort_func<W: glib::ObjectExt>(
         &self,
         cmp: impl Fn(&T, &T) -> core::cmp::Ordering + 'static,
     ) -> Option<Box<dyn Fn(&W, &W) -> i32 + 'static>> {
-        let typed_quark = self.clone();
+        let typed_quark = *self;
         Some(Box::new(move |this, that| {
             let this = typed_quark.get(this);
             let that = typed_quark.get(that);
@@ -55,11 +56,12 @@ impl<T: 'static> TypedQuark<T> {
         }))
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn gen_filter_func<W: glib::ObjectExt>(
         &self,
         pred: impl Fn(&T) -> bool + 'static,
     ) -> Option<Box<dyn Fn(&W) -> bool + 'static>> {
-        let typed_quark = self.clone();
+        let typed_quark = *self;
         Some(Box::new(move |widget| {
             if let Some(data) = typed_quark.get(widget) {
                 pred(data)

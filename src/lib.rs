@@ -17,7 +17,7 @@ impl Asset {
         use gtk::prelude::*;
         let css_provider = gtk::CssProvider::new();
         css_provider
-            .load_from_data(Self::get(filename).unwrap().as_ref())
+            .load_from_data(Self::get(filename).unwrap().data.as_ref())
             .unwrap();
         css_provider
     }

@@ -103,7 +103,7 @@ impl DirectoryActor {
                     Err("pattern must not be empty".to_owned())
                 } else {
                     let regex = regex::Regex::new(pattern).map_err(|e| e.to_string())?;
-                    let mut named_groups = regex.capture_names().filter_map(|c| c).collect::<Vec<_>>();
+                    let mut named_groups = regex.capture_names().flatten().collect::<Vec<_>>();
                     named_groups.sort();
                     if ["c", "v"].starts_with(&named_groups) {
                         let _ = tx.try_send(PreviewEvent::PatternChanged);
@@ -129,7 +129,7 @@ impl DirectoryActor {
             }
         })
         .with_edit_widget(self.widgets.txt_directory_volume.clone(), "changed", self.model.volume.map(|s| s.to_string()).unwrap_or_else(|| "".to_owned()), |text| {
-            if text == "" {
+            if text.is_empty() {
                 return Ok(())
             }
             match text.parse::<i64>() {
@@ -303,7 +303,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
                     .bind(series_id)
                     .bind(txt_directory_pattern)
                     .bind(txt_directory_dir)
-                    .bind(if txt_directory_volume == "" {
+                    .bind(if txt_directory_volume.is_empty() {
                         None
                     } else {
                         Some(txt_directory_volume.parse::<i64>()?)
@@ -323,7 +323,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for DirectoryActor {
                 "#)
                     .bind(txt_directory_pattern)
                     .bind(txt_directory_dir)
-                    .bind(if txt_directory_volume == "" {
+                    .bind(if txt_directory_volume.is_empty() {
                         None
                     } else {
                         Some(txt_directory_volume.parse::<i64>()?)
@@ -460,18 +460,15 @@ impl DirectoryActor {
         let lsm = &self.widgets.lsm_directory_scan_preview;
         lsm.clear();
         for path in self.preview_unfiltered_paths.iter() {
-            match crate::files_discovery::process_file_match(path, &regex) {
-                Ok(decision) => {
-                    let it = lsm.append();
-                    lsm.set_value(&it, 0, &path.to_value());
-                    if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
-                        if let Some(volume) = volume {
-                            lsm.set_value(&it, 2, &volume.to_string().to_value());
-                        }
-                        lsm.set_value(&it, 1, &chapter.to_string().to_value());
+            if let Ok(decision) = crate::files_discovery::process_file_match(path, &regex) {
+                let it = lsm.append();
+                lsm.set_value(&it, 0, &path.to_value());
+                if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
+                    if let Some(volume) = volume {
+                        lsm.set_value(&it, 2, &volume.to_string().to_value());
                     }
+                    lsm.set_value(&it, 1, &chapter.to_string().to_value());
                 }
-                Err(_) => {}
             }
         }
     }
