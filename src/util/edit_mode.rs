@@ -69,8 +69,7 @@ impl EditMode {
                     }
                     None
                 }
-            })
-            .unwrap();
+            });
         widget.set_editability(true);
         widget.style_context().add_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
@@ -91,8 +90,7 @@ impl EditMode {
         tag: T,
     ) -> Option<i64> {
         self.stack
-            .set_property("visible-child-name", self.stack_page)
-            .unwrap();
+            .set_property("visible-child-name", self.stack_page);
         let result = {
             let widgets = core::mem::take(&mut self.widgets);
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
@@ -139,7 +137,7 @@ impl EditMode {
         };
         self.stack
             .set_property("visible-child-name", "normal")
-            .unwrap();
+            ;
         for callback in self.restoration_callbacks {
             callback();
         }

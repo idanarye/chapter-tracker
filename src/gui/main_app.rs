@@ -29,7 +29,7 @@ impl actix::Actor for MainAppActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         let css_provider = crate::Asset::css_provider("default.css");
         gtk::StyleContext::add_provider_for_screen(
-            &self.widgets.app_main.screen().unwrap(),
+            &GtkWindowExt::screen(&self.widgets.app_main).unwrap(),
             &css_provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );

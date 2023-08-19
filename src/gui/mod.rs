@@ -55,7 +55,7 @@ pub fn start_gui() -> anyhow::Result<i32> {
     });
 
     let exit_status = app.run();
-    Ok(exit_status)
+    Ok(exit_status.value())
 }
 
 #[derive(woab::Factories)]
