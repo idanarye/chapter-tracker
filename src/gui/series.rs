@@ -73,7 +73,7 @@ pub struct SeriesWidgets {
     pub row_series: gtk::ListBoxRow,
     #[prop_sync(set, get)]
     txt_series_name: gtk::Entry,
-    //#[prop_sync("active-id": &str, set, get)]
+    #[prop_sync("active-id": String, set, get)]
     pub cbo_series_media_type: gtk::ComboBox,
     #[prop_sync(set, get)]
     txt_download_command: gtk::Entry,
@@ -260,7 +260,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
         let series_id = self.model.id;
         let SeriesWidgetsPropGetter {
             txt_series_name,
-            //cbo_series_media_type,
+            cbo_series_media_type,
             txt_download_command,
             txt_download_command_dir,
         } = self.widgets.get_props();
@@ -274,7 +274,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
                 "#,
                     )
                     .bind(txt_series_name)
-                    //.bind(cbo_series_media_type.parse::<i64>().unwrap())
+                    .bind(cbo_series_media_type.parse::<i64>().unwrap())
                     .bind(txt_download_command)
                     .bind(txt_download_command_dir);
                     let mut con = db::request_connection().await?;
@@ -292,7 +292,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
                 "#,
                     )
                     .bind(txt_series_name)
-                    //.bind(cbo_series_media_type.parse::<i64>().unwrap())
+                    .bind(cbo_series_media_type.parse::<i64>().unwrap())
                     .bind(txt_download_command)
                     .bind(txt_download_command_dir)
                     .bind(series_id);
@@ -535,7 +535,7 @@ impl SeriesActor {
     fn update_widgets_from_model(&self) {
         self.widgets.set_props(&SeriesWidgetsPropSetter {
             txt_series_name: &self.model.name,
-            //cbo_series_media_type: &self.model.media_type.to_string(),
+            cbo_series_media_type: self.model.media_type.to_string(),
             txt_download_command: self.model.download_command.as_deref().unwrap_or(""),
             txt_download_command_dir: self.model.download_command_dir.as_deref().unwrap_or(""),
         });
@@ -838,16 +838,14 @@ impl EpisodeRow {
                 .unwrap_or_else(|| "".to_owned()),
             txt_chapter: &self.model.number.to_string(),
         });
-        self.widgets
-            .stk_read_state
-            .set_property(
-                "visible-child-name",
-                if self.model.date_of_read.is_some() {
-                    "episode-is-read"
-                } else {
-                    "episode-is-not-read"
-                },
-            );
+        self.widgets.stk_read_state.set_property(
+            "visible-child-name",
+            if self.model.date_of_read.is_some() {
+                "episode-is-read"
+            } else {
+                "episode-is-not-read"
+            },
+        );
     }
 }
 

@@ -49,27 +49,26 @@ impl EditMode {
             widget.set_tooltip_text(Some(&err));
             widget.style_context().add_class("bad-input");
         }
-        let signal_handler_id = widget
-            .connect_local(widget_update_signal, false, {
-                let widget = widget.clone();
-                move |_args| {
-                    let style_context = widget.style_context();
-                    let value = widget.get_value();
-                    if value == saved_value {
-                        style_context.remove_class("unsaved-change");
-                    } else {
-                        style_context.add_class("unsaved-change");
-                    }
-                    if let Err(err) = validate(&value) {
-                        widget.set_tooltip_text(Some(&err));
-                        style_context.add_class("bad-input");
-                    } else {
-                        widget.set_tooltip_text(None);
-                        style_context.remove_class("bad-input");
-                    }
-                    None
+        let signal_handler_id = widget.connect_local(widget_update_signal, false, {
+            let widget = widget.clone();
+            move |_args| {
+                let style_context = widget.style_context();
+                let value = widget.get_value();
+                if value == saved_value {
+                    style_context.remove_class("unsaved-change");
+                } else {
+                    style_context.add_class("unsaved-change");
                 }
-            });
+                if let Err(err) = validate(&value) {
+                    widget.set_tooltip_text(Some(&err));
+                    style_context.add_class("bad-input");
+                } else {
+                    widget.set_tooltip_text(None);
+                    style_context.remove_class("bad-input");
+                }
+                None
+            }
+        });
         widget.set_editability(true);
         widget.style_context().add_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
@@ -135,9 +134,7 @@ impl EditMode {
                 save_fut.await.ok()
             }
         };
-        self.stack
-            .set_property("visible-child-name", "normal")
-            ;
+        self.stack.set_property("visible-child-name", "normal");
         for callback in self.restoration_callbacks {
             callback();
         }

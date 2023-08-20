@@ -18,7 +18,7 @@ impl<T: 'static> TypedQuark<T> {
     pub fn new(name: &str) -> Self {
         let name = format!("{}-{}", name, core::any::type_name::<T>());
         TypedQuark {
-            quark: glib::Quark::from_str(&name),
+            quark: glib::Quark::from_str(name),
             _phantom: Default::default(),
         }
     }
