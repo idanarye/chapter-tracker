@@ -1,7 +1,7 @@
 local moonicipal = require'moonicipal'
 local T = moonicipal.tasks_file()
 
-T = require'idan.project.rust'(T, {
+moonicipal.include(require'idan.project.rust' {
     crate_name = 'chapter_tracker',
     cli_args_for_targets = {
         ['chapter-tracker'] = {
