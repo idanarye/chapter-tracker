@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 pub struct TypedQuark<T: 'static> {
     quark: glib::Quark,
     _phantom: core::marker::PhantomData<T>,
@@ -23,52 +25,49 @@ impl<T: 'static> TypedQuark<T> {
         }
     }
 
-    pub fn set(&self, obj: &impl glib::ObjectExt, data: T) {
+    pub fn set(&self, obj: &impl glib::object::ObjectExt, data: T) {
         unsafe {
             obj.set_qdata(self.quark, data);
         }
     }
 
-    pub fn get<'a>(&self, obj: &'a impl glib::ObjectExt) -> Option<&'a T> {
+    pub fn get<'a>(&self, obj: &'a impl glib::object::ObjectExt) -> Option<&'a T> {
         unsafe { obj.qdata(self.quark).map(|qd| qd.as_ref()) }
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn gen_sort_func<W: glib::ObjectExt>(
+    pub fn gen_sort_func<W: glib::object::ObjectExt>(
         &self,
-        cmp: impl Fn(&T, &T) -> core::cmp::Ordering + 'static,
-    ) -> Option<Box<dyn Fn(&W, &W) -> i32 + 'static>> {
+        cmp: impl Fn(&T, &T) -> Ordering + 'static,
+    ) -> Box<dyn Fn(&W, &W) -> gtk4::Ordering + 'static> {
         let typed_quark = *self;
-        Some(Box::new(move |this, that| {
+        Box::new(move |this, that| {
             let this = typed_quark.get(this);
             let that = typed_quark.get(that);
             match (this, that) {
                 // No data must mean it's a new row in the making - these put these rows last.
-                (None, None) => 0,
-                (None, Some(_)) => -1,
-                (Some(_), None) => 1,
-                (Some(this), Some(that)) => match cmp(this, that) {
-                    std::cmp::Ordering::Less => -1,
-                    std::cmp::Ordering::Equal => 0,
-                    std::cmp::Ordering::Greater => 1,
-                },
+                (None, None) => Ordering::Equal,
+                (None, Some(_)) => Ordering::Less,
+                (Some(_), None) => Ordering::Greater,
+                (Some(this), Some(that)) => cmp(this, that),
             }
-        }))
+            .into()
+        })
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn gen_filter_func<W: glib::ObjectExt>(
+    pub fn gen_filter_func<W: glib::object::ObjectExt>(
         &self,
         pred: impl Fn(&T) -> bool + 'static,
-    ) -> Option<Box<dyn Fn(&W) -> bool + 'static>> {
+    ) -> Box<dyn Fn(&W) -> bool + 'static> {
         let typed_quark = *self;
-        Some(Box::new(move |widget| {
+        Box::new(move |widget| {
             if let Some(data) = typed_quark.get(widget) {
                 pred(data)
             } else {
                 // No data must mean it's a new row in the making.
                 true
             }
-        }))
+        })
     }
 }

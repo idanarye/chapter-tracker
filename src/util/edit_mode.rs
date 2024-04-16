@@ -1,19 +1,19 @@
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(typed_builder::TypedBuilder)]
 pub struct EditMode {
-    stack: gtk::Stack,
+    stack: gtk4::Stack,
     #[builder(default = "mid-edit")]
     stack_page: &'static str,
-    save_button: gtk::Button,
+    save_button: gtk4::Button,
     #[builder(default, setter(strip_option))]
-    cancel_button: Option<gtk::Button>,
+    cancel_button: Option<gtk4::Button>,
     #[builder(default, setter(skip))]
     restoration_callbacks: Vec<Box<dyn FnOnce()>>,
     #[builder(default, setter(skip))]
     cancel_callbacks: Vec<Box<dyn FnOnce()>>,
     #[builder(default, setter(skip))]
-    widgets: Vec<gtk::Widget>,
+    widgets: Vec<gtk4::Widget>,
 }
 
 impl EditMode {
@@ -29,8 +29,8 @@ impl EditMode {
         validate: impl Fn(&T) -> Result<(), String> + 'static,
     ) -> Self
     where
-        W: glib::ObjectExt,
-        W: glib::IsA<gtk::Widget>,
+        W: glib::object::ObjectExt,
+        W: glib::prelude::IsA<gtk4::Widget>,
         W: WidgetForEditMode<T>,
         W: Clone,
         T: PartialEq,
@@ -153,7 +153,7 @@ pub trait WidgetForEditMode<T> {
     fn set_value(&self, value: T);
 }
 
-impl WidgetForEditMode<String> for gtk::Entry {
+impl WidgetForEditMode<String> for gtk4::Entry {
     fn set_editability(&self, editability: bool) {
         self.set_editable(editability);
     }
@@ -167,12 +167,12 @@ impl WidgetForEditMode<String> for gtk::Entry {
     }
 }
 
-impl WidgetForEditMode<i64> for gtk::ComboBox {
+impl WidgetForEditMode<i64> for gtk4::ComboBox {
     fn set_editability(&self, editability: bool) {
         self.set_button_sensitivity(if editability {
-            gtk::SensitivityType::On
+            gtk4::SensitivityType::On
         } else {
-            gtk::SensitivityType::Off
+            gtk4::SensitivityType::Off
         });
     }
 
@@ -193,7 +193,7 @@ impl WidgetForEditMode<i64> for gtk::ComboBox {
     }
 }
 
-impl WidgetForEditMode<bool> for gtk::ToggleButton {
+impl WidgetForEditMode<bool> for gtk4::ToggleButton {
     fn set_editability(&self, editability: bool) {
         self.set_sensitive(editability);
     }

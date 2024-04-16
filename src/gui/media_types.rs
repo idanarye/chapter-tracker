@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 use crate::models;
 use crate::util::db;
@@ -18,8 +18,8 @@ pub struct MediaTypesActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct MediaTypesWindowWidgets {
-    win_media_types: gtk::Window,
-    lst_media_types: gtk::ListBox,
+    win_media_types: gtk4::Window,
+    lst_media_types: gtk4::ListBox,
 }
 
 impl actix::Actor for MediaTypesActor {
@@ -75,8 +75,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::MediaType>> for Media
                     let widgets: MediaTypeWidgets = self
                         .factories
                         .row_media_type
-                        .instantiate()
-                        .connect_to((data.id, ctx.address()))
+                        .instantiate_route_to((data.id, ctx.address()))
                         .widgets()
                         .unwrap();
                     let entry = entry.insert(MediaTypeRow {
@@ -86,7 +85,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::MediaType>> for Media
                     entry.update_widgets_from_model();
                     self.widgets
                         .lst_media_types
-                        .add(&entry.widgets.row_media_type);
+                        .append(&entry.widgets.row_media_type);
                 }
             }
         }
@@ -113,8 +112,7 @@ impl MediaTypesActor {
         let widgets: MediaTypeWidgets = self
             .factories
             .row_media_type
-            .instantiate()
-            .connect_to((data.id, ctx.address()))
+            .instantiate_route_to((data.id, ctx.address()))
             .widgets()
             .unwrap();
         let entry = entry.insert(MediaTypeRow {
@@ -124,7 +122,7 @@ impl MediaTypesActor {
         entry.update_widgets_from_model();
         self.widgets
             .lst_media_types
-            .add(&entry.widgets.row_media_type);
+            .append(&entry.widgets.row_media_type);
         ctx.spawn(
             entry
                 .add_verifications_to_edit_mode(
@@ -176,23 +174,23 @@ struct MediaTypeRow {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct MediaTypeWidgets {
-    row_media_type: gtk::ListBoxRow,
+    row_media_type: gtk4::ListBoxRow,
     #[prop_sync(set, get)]
-    txt_media_type_name: gtk::Entry,
+    txt_media_type_name: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_media_type_base_dir: gtk::Entry,
+    txt_media_type_base_dir: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_media_type_file_types: gtk::Entry,
+    txt_media_type_file_types: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_media_type_adjacent_file_types: gtk::Entry,
+    txt_media_type_adjacent_file_types: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_media_type_program: gtk::Entry,
-    #[prop_sync("active": bool, set, get)]
-    chk_media_type_maintain_symlinks: gtk::ToggleButton,
-    stk_media_type_edit: gtk::Stack,
-    btn_save_media_type: gtk::Button,
-    btn_cancel_media_type_edit: gtk::Button,
-    btn_save_new_media_type: gtk::Button,
+    txt_media_type_program: gtk4::Entry,
+    #[prop_sync("active" as bool, set, get)]
+    chk_media_type_maintain_symlinks: gtk4::ToggleButton,
+    stk_media_type_edit: gtk4::Stack,
+    btn_save_media_type: gtk4::Button,
+    btn_cancel_media_type_edit: gtk4::Button,
+    btn_save_new_media_type: gtk4::Button,
 }
 
 impl MediaTypeRow {
@@ -262,12 +260,12 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
         let media_type = &self.media_types[&media_type_id];
         Ok(match msg.name() {
             "open_base_directory_dialog" => {
-                let icon_position: gtk::EntryIconPosition = msg.param(1)?;
+                let icon_position: gtk4::EntryIconPosition = msg.param(1)?;
                 match (
                     media_type.widgets.txt_media_type_base_dir.is_editable(),
                     icon_position,
                 ) {
-                    (true, gtk::EntryIconPosition::Primary) => {
+                    (true, gtk4::EntryIconPosition::Primary) => {
                         ctx.spawn(
                             crate::util::dialogs::run_set_directory_dialog(
                                 media_type.widgets.txt_media_type_base_dir.clone(),
@@ -276,7 +274,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                             .into_actor(self),
                         );
                     }
-                    (true, gtk::EntryIconPosition::Secondary) => {
+                    (true, gtk4::EntryIconPosition::Secondary) => {
                         media_type.widgets.txt_media_type_base_dir.set_text("");
                     }
                     _ => (),
@@ -325,37 +323,30 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                                 .await
                                 .unwrap();
                         if 0 < num_serieses {
-                            woab::run_dialog(
-                                &gtk::MessageDialog::new::<gtk::Window>(
-                                    None,
-                                    gtk::DialogFlags::MODAL,
-                                    gtk::MessageType::Error,
-                                    gtk::ButtonsType::Close,
-                                    &format!(
-                                        "Cannot delete {:?} - {} serieses are using it",
-                                        media_type_name, num_serieses
-                                    ),
+                            gtk4::MessageDialog::new(
+                                None::<&gtk4::Window>,
+                                gtk4::DialogFlags::MODAL,
+                                gtk4::MessageType::Error,
+                                gtk4::ButtonsType::Close,
+                                &format!(
+                                    "Cannot delete {:?} - {} serieses are using it",
+                                    media_type_name, num_serieses
                                 ),
-                                true,
                             )
+                            .run_future()
                             .await;
                             false
                         } else {
-                            let user_decision = woab::run_dialog(
-                                &gtk::MessageDialog::new::<gtk::ApplicationWindow>(
-                                    None,
-                                    gtk::DialogFlags::MODAL,
-                                    gtk::MessageType::Warning,
-                                    gtk::ButtonsType::YesNo,
-                                    &format!(
-                                        "Are you sure you want to delete {:?}?",
-                                        media_type_name
-                                    ),
-                                ),
-                                true,
+                            let user_decision = gtk4::MessageDialog::new(
+                                None::<&gtk4::ApplicationWindow>,
+                                gtk4::DialogFlags::MODAL,
+                                gtk4::MessageType::Warning,
+                                gtk4::ButtonsType::YesNo,
+                                &format!("Are you sure you want to delete {:?}?", media_type_name),
                             )
+                            .run_future()
                             .await;
-                            if user_decision == gtk::ResponseType::Yes {
+                            if user_decision == gtk4::ResponseType::Yes {
                                 sqlx::query("DELETE FROM media_types WHERE id = ?")
                                     .bind(media_type_id)
                                     .execute(con.acquire().await.unwrap())

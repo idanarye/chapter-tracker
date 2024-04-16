@@ -103,7 +103,9 @@ pub async fn refresh_links_directory(
             let mut reader = fs::read_dir(directory).await?;
             while let Some(dirent) = reader.next_entry().await? {
                 let file_path = dirent.path();
-                let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) else { continue };
+                let Some(extension) = file_path.extension().and_then(|ext| ext.to_str()) else {
+                    continue;
+                };
                 if let Some(extension) = all_potential_adjacent_suffixes.get(extension) {
                     let file_without_extension = file_path.with_extension("");
                     all_adjacent_files

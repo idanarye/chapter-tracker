@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 use crate::models;
 use crate::util::db;
@@ -8,7 +8,7 @@ use crate::util::edit_mode::EditMode;
 use sqlx::prelude::*;
 
 #[derive(typed_builder::TypedBuilder, woab::Removable)]
-#[removable(self.widgets.row_directory)]
+#[removable(self.widgets.row_directory in gtk4::ListBox)]
 pub struct DirectoryActor {
     widgets: DirectoryWidgets,
     model: models::Directory,
@@ -19,22 +19,22 @@ pub struct DirectoryActor {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 pub struct DirectoryWidgets {
-    pub row_directory: gtk::ListBoxRow,
+    pub row_directory: gtk4::ListBoxRow,
     #[prop_sync(set, get)]
-    txt_directory_pattern: gtk::Entry,
+    txt_directory_pattern: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_directory_dir: gtk::Entry,
+    txt_directory_dir: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_directory_volume: gtk::Entry,
-    #[prop_sync("active": bool, set, get)]
-    chk_directory_recursive: gtk::ToggleButton,
-    stk_directory_buttons: gtk::Stack,
-    btn_save_directory: gtk::Button,
-    btn_cancel_directory_edit: gtk::Button,
-    btn_save_new_directory: gtk::Button,
-    rvl_directory_scan_preview: gtk::Revealer,
-    lsm_directory_scan_preview: gtk::ListStore,
-    srt_directory_scan_preview: gtk::TreeModelSort,
+    txt_directory_volume: gtk4::Entry,
+    #[prop_sync("active" as bool, set, get)]
+    chk_directory_recursive: gtk4::ToggleButton,
+    stk_directory_buttons: gtk4::Stack,
+    btn_save_directory: gtk4::Button,
+    btn_cancel_directory_edit: gtk4::Button,
+    btn_save_new_directory: gtk4::Button,
+    rvl_directory_scan_preview: gtk4::Revealer,
+    lsm_directory_scan_preview: gtk4::ListStore,
+    srt_directory_scan_preview: gtk4::TreeModelSort,
 }
 
 impl actix::Actor for DirectoryActor {
@@ -46,7 +46,7 @@ impl actix::Actor for DirectoryActor {
             .srt_directory_scan_preview
             .set_default_sort_func(|mdl, it1, it2| {
                 let parse_column = |it, column| {
-                    mdl.value(it, column)
+                    mdl.get_value(it, column)
                         .get::<String>()
                         .ok()
                         .and_then(|s| s.parse::<i64>().ok())
@@ -57,8 +57,8 @@ impl actix::Actor for DirectoryActor {
                     (Some(_), None) => core::cmp::Ordering::Less,
                     (None, Some(_)) => core::cmp::Ordering::Greater,
                     (None, None) => {
-                        let file1 = mdl.value(it1, 0).get::<String>().ok();
-                        let file2 = mdl.value(it2, 0).get::<String>().ok();
+                        let file1 = mdl.get_value(it1, 0).get::<String>().ok();
+                        let file2 = mdl.get_value(it2, 0).get::<String>().ok();
                         file1.cmp(&file2)
                     }
                     (Some(chap1), Some(chap2)) => {
@@ -73,6 +73,7 @@ impl actix::Actor for DirectoryActor {
                         }
                     }
                 }
+                .into()
             });
     }
 }
@@ -233,11 +234,11 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                 None
             }
             "delete_directory" => {
-                let dialog = gtk::MessageDialog::new::<gtk::ApplicationWindow>(
-                    None,
-                    gtk::DialogFlags::MODAL,
-                    gtk::MessageType::Warning,
-                    gtk::ButtonsType::YesNo,
+                let dialog = gtk4::MessageDialog::new(
+                    None::<&gtk4::ApplicationWindow>,
+                    gtk4::DialogFlags::MODAL,
+                    gtk4::MessageType::Warning,
+                    gtk4::ButtonsType::YesNo,
                     &format!(
                         "Are you sure you want to delete {:?} on {:?}?",
                         self.model.pattern, self.model.dir
@@ -247,8 +248,8 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                 let addr = ctx.address();
                 ctx.spawn(
                     async move {
-                        let result = woab::run_dialog(&dialog, true).await;
-                        if result != gtk::ResponseType::Yes {
+                        let result = dialog.run_future().await;
+                        if result != gtk4::ResponseType::Yes {
                             return;
                         }
                         let query = sqlx::query(

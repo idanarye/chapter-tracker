@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 use hashbrown::HashMap;
 
@@ -12,7 +12,7 @@ use crate::util::edit_mode::EditMode;
 use crate::util::TypedQuark;
 
 #[derive(typed_builder::TypedBuilder, woab::Removable)]
-#[removable(self.widgets.row_series)]
+#[removable(self.widgets.row_series in gtk4::ListBox)]
 pub struct SeriesActor {
     widgets: SeriesWidgets,
     factories: crate::gui::Factories,
@@ -70,23 +70,23 @@ impl actix::Actor for SeriesActor {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 pub struct SeriesWidgets {
-    pub row_series: gtk::ListBoxRow,
+    pub row_series: gtk4::ListBoxRow,
     #[prop_sync(set, get)]
-    txt_series_name: gtk::Entry,
-    #[prop_sync("active-id": String, set, get)]
-    pub cbo_series_media_type: gtk::ComboBox,
+    txt_series_name: gtk4::Entry,
+    #[prop_sync("active-id" as String, set, get)]
+    pub cbo_series_media_type: gtk4::ComboBox,
     #[prop_sync(set, get)]
-    txt_download_command: gtk::Entry,
+    txt_download_command: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_download_command_dir: gtk::Entry,
-    tgl_series_unread: gtk::ToggleButton,
-    rvl_episodes: gtk::Revealer,
-    lst_episodes: gtk::ListBox,
-    lst_directories: gtk::ListBox,
-    stk_series_edit: gtk::Stack,
-    btn_save_series: gtk::Button,
-    btn_cancel_series_edit: gtk::Button,
-    btn_save_new_series: gtk::Button,
+    txt_download_command_dir: gtk4::Entry,
+    tgl_series_unread: gtk4::ToggleButton,
+    rvl_episodes: gtk4::Revealer,
+    lst_episodes: gtk4::ListBox,
+    lst_directories: gtk4::ListBox,
+    stk_series_edit: gtk4::Stack,
+    btn_save_series: gtk4::Button,
+    btn_cancel_series_edit: gtk4::Button,
+    btn_save_new_series: gtk4::Button,
 }
 
 impl actix::Handler<woab::Signal> for SeriesActor {
@@ -98,7 +98,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 if self.model.id < 0 {
                     return Ok(None);
                 }
-                let toggle_button: gtk::ToggleButton = msg.param(0)?;
+                let toggle_button: gtk4::ToggleButton = msg.param(0)?;
                 if toggle_button.is_active() {
                     self.update_episodes(ctx, None);
                     self.update_directories(ctx);
@@ -144,19 +144,19 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 None
             }
             "delete_series" => {
-                let dialog = gtk::MessageDialog::new::<gtk::ApplicationWindow>(
-                    None,
-                    gtk::DialogFlags::MODAL,
-                    gtk::MessageType::Warning,
-                    gtk::ButtonsType::YesNo,
+                let dialog = gtk4::MessageDialog::new(
+                    None::<&gtk4::ApplicationWindow>,
+                    gtk4::DialogFlags::MODAL,
+                    gtk4::MessageType::Warning,
+                    gtk4::ButtonsType::YesNo,
                     &format!("Are you sure you want to delete {:?}?", self.model.name),
                 );
                 let series_id = self.model.id;
                 let addr = ctx.address();
                 ctx.spawn(
                     async move {
-                        let result = woab::run_dialog(&dialog, true).await;
-                        if result != gtk::ResponseType::Yes {
+                        let result = dialog.run_future().await;
+                        if result != gtk4::ResponseType::Yes {
                             return;
                         }
                         let query = sqlx::query(
@@ -183,12 +183,12 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 if !self.widgets.txt_download_command_dir.is_editable() {
                     return Ok(None);
                 }
-                let icon_position: gtk::EntryIconPosition = msg.param(1)?;
+                let icon_position: gtk4::EntryIconPosition = msg.param(1)?;
                 match (
                     self.widgets.txt_download_command_dir.is_editable(),
                     icon_position,
                 ) {
-                    (true, gtk::EntryIconPosition::Primary) => {
+                    (true, gtk4::EntryIconPosition::Primary) => {
                         ctx.spawn(
                             crate::util::dialogs::run_set_directory_dialog(
                                 self.widgets.txt_download_command_dir.clone(),
@@ -197,7 +197,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                             .into_actor(self),
                         );
                     }
-                    (true, gtk::EntryIconPosition::Secondary) => {
+                    (true, gtk4::EntryIconPosition::Secondary) => {
                         self.widgets.txt_download_command_dir.set_text("");
                     }
                     _ => (),
@@ -205,12 +205,12 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 None
             }
             "execute_download_command" => {
-                let icon_position: gtk::EntryIconPosition = msg.param(1)?;
+                let icon_position: gtk4::EntryIconPosition = msg.param(1)?;
                 match (
                     self.widgets.txt_download_command_dir.is_editable(),
                     icon_position,
                 ) {
-                    (_, gtk::EntryIconPosition::Primary) => {
+                    (_, gtk4::EntryIconPosition::Primary) => {
                         let download_command = self.widgets.txt_download_command.text();
                         let download_command = download_command.as_str();
                         if !download_command.is_empty() {
@@ -237,7 +237,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                             }
                         }
                     }
-                    (true, gtk::EntryIconPosition::Secondary) => {
+                    (true, gtk4::EntryIconPosition::Secondary) => {
                         self.widgets.txt_download_command.set_text("");
                     }
                     _ => (),
@@ -453,17 +453,17 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                 let episode = &self.episodes[&episode_id];
                 let lst_episodes = self.widgets.lst_episodes.clone();
                 let row_episode = episode.widgets.row_episode.clone();
-                let dialog = gtk::MessageDialog::new::<gtk::ApplicationWindow>(
-                    None,
-                    gtk::DialogFlags::MODAL,
-                    gtk::MessageType::Warning,
-                    gtk::ButtonsType::YesNo,
+                let dialog = gtk4::MessageDialog::new(
+                    None::<&gtk4::ApplicationWindow>,
+                    gtk4::DialogFlags::MODAL,
+                    gtk4::MessageType::Warning,
+                    gtk4::ButtonsType::YesNo,
                     &format!("Are you sure you want to delete {:?}?", episode.model.name),
                 );
                 ctx.spawn(
                     async move {
-                        let result = woab::run_dialog(&dialog, true).await;
-                        if result != gtk::ResponseType::Yes {
+                        let result = dialog.run_future().await;
+                        if result != gtk4::ResponseType::Yes {
                             return;
                         }
                         let query = sqlx::query(
@@ -586,10 +586,7 @@ impl SeriesActor {
     }
 
     fn update_directories(&mut self, ctx: &mut actix::Context<Self>) {
-        let mut already_has_children = false;
-        self.widgets.lst_directories.foreach(|_| {
-            already_has_children = true;
-        });
+        let already_has_children = 0 < self.widgets.lst_directories.observe_children().n_items();
         ctx.spawn(
             crate::actors::DbActor::from_registry()
                 .send(crate::msgs::RefreshList {
@@ -610,24 +607,29 @@ impl SeriesActor {
     }
 
     fn add_row_for_new_directory(&mut self, ctx: &mut actix::Context<Self>) {
-        let bld = self.factories.row_directory.instantiate();
-        let widgets: DirectoryWidgets = bld.widgets().unwrap();
-        self.widgets.lst_directories.add(&widgets.row_directory);
-        let addr = DirectoryActor::builder()
-            .widgets(widgets)
-            .model(models::Directory {
-                id: -1,
-                series: self.model.id,
-                pattern: "".to_owned(),
-                dir: "".to_owned(),
-                volume: None,
-                recursive: false,
-            })
-            .series(ctx.address())
-            .build()
-            .start();
-        addr.do_send(crate::gui::msgs::InitiateNewRowSequence);
-        bld.connect_to(addr);
+        DirectoryActor::create(|directory_ctx| {
+            let bld = self
+                .factories
+                .row_directory
+                .instantiate_route_to(directory_ctx.address());
+            let widgets: DirectoryWidgets = bld.widgets().unwrap();
+            self.widgets.lst_directories.append(&widgets.row_directory);
+            directory_ctx
+                .address()
+                .do_send(crate::gui::msgs::InitiateNewRowSequence);
+            DirectoryActor::builder()
+                .widgets(widgets)
+                .model(models::Directory {
+                    id: -1,
+                    series: self.model.id,
+                    pattern: "".to_owned(),
+                    dir: "".to_owned(),
+                    volume: None,
+                    recursive: false,
+                })
+                .series(ctx.address())
+                .build()
+        });
     }
 
     fn add_verifications_to_edit_mode(&self, edit_mode: EditMode) -> EditMode {
@@ -701,8 +703,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesA
                     let widgets: EpisodeWidgets = self
                         .factories
                         .row_episode
-                        .instantiate()
-                        .connect_to((data.id, ctx.address()))
+                        .instantiate_route_to((data.id, ctx.address()))
                         .widgets()
                         .unwrap();
                     self.episode_sort_and_filter_data
@@ -712,7 +713,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesA
                         widgets,
                     });
                     entry.update_widgets_from_model();
-                    self.widgets.lst_episodes.add(&entry.widgets.row_episode);
+                    self.widgets.lst_episodes.append(&entry.widgets.row_episode);
                 }
             }
         }
@@ -734,17 +735,21 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
                     addr.do_send(crate::gui::msgs::UpdateModel(data));
                 }
                 hashbrown::hash_map::Entry::Vacant(entry) => {
-                    let bld = self.factories.row_directory.instantiate();
+                    let directory_ctx = Context::new();
+                    let bld = self
+                        .factories
+                        .row_directory
+                        .instantiate_route_to(directory_ctx.address());
                     let widgets: DirectoryWidgets = bld.widgets().unwrap();
-                    self.widgets.lst_directories.add(&widgets.row_directory);
-                    let addr = DirectoryActor::builder()
-                        .widgets(widgets)
-                        .model(data)
-                        .series(ctx.address())
-                        .build()
-                        .start();
-                    entry.insert(addr.clone());
-                    bld.connect_to(addr);
+                    self.widgets.lst_directories.append(&widgets.row_directory);
+                    entry.insert(directory_ctx.address());
+                    directory_ctx.run(
+                        DirectoryActor::builder()
+                            .widgets(widgets)
+                            .model(data)
+                            .series(ctx.address())
+                            .build(),
+                    );
                 }
             }
         }
@@ -851,19 +856,19 @@ impl EpisodeRow {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct EpisodeWidgets {
-    row_episode: gtk::ListBoxRow,
+    row_episode: gtk4::ListBoxRow,
     #[prop_sync(set, get)]
-    txt_volume: gtk::Entry,
+    txt_volume: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_chapter: gtk::Entry,
+    txt_chapter: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_name: gtk::Entry,
+    txt_name: gtk4::Entry,
     #[prop_sync(set, get)]
-    txt_file: gtk::Entry,
-    stk_read_state: gtk::Stack,
-    stk_episode_edit: gtk::Stack,
-    btn_save_episode: gtk::Button,
-    btn_cancel_episode_edit: gtk::Button,
+    txt_file: gtk4::Entry,
+    stk_read_state: gtk4::Stack,
+    stk_episode_edit: gtk4::Stack,
+    btn_save_episode: gtk4::Button,
+    btn_cancel_episode_edit: gtk4::Button,
 }
 
 impl SeriesActor {
@@ -904,13 +909,13 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave<i64>> for SeriesActor {
             async move {
                 let query = sqlx::query(
                     r#"
-                UPDATE episodes
-                SET volume = ?
-                  , number = ?
-                  , name = ?
-                  , file = ?
-                WHERE id == ?
-            "#,
+                    UPDATE episodes
+                    SET volume = ?
+                    , number = ?
+                    , name = ?
+                    , file = ?
+                    WHERE id == ?
+                    "#,
                 )
                 .bind(if txt_volume.is_empty() {
                     None

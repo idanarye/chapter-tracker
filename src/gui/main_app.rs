@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 use sqlx::prelude::*;
 
 use hashbrown::HashMap;
@@ -28,10 +28,10 @@ impl actix::Actor for MainAppActor {
     type Context = actix::Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         let css_provider = crate::Asset::css_provider("default.css");
-        gtk::StyleContext::add_provider_for_screen(
-            &GtkWindowExt::screen(&self.widgets.app_main).unwrap(),
+        gtk4::style_context_add_provider_for_display(
+            &WidgetExt::display(&self.widgets.app_main),
             &css_provider,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
         let addr = ctx.address();
         ctx.spawn(
@@ -52,13 +52,13 @@ impl actix::Actor for MainAppActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct MainAppWidgets {
-    pub app_main: gtk::ApplicationWindow,
-    lst_serieses: gtk::ListBox,
-    lsm_media_types: gtk::ListStore,
-    chk_series_unread: gtk::CheckButton,
-    txt_series_filter: gtk::Entry,
-    spn_scan_files: gtk::Spinner,
-    spn_clean_dangling: gtk::Spinner,
+    pub app_main: gtk4::ApplicationWindow,
+    lst_serieses: gtk4::ListBox,
+    lsm_media_types: gtk4::ListStore,
+    chk_series_unread: gtk4::CheckButton,
+    txt_series_filter: gtk4::Entry,
+    spn_scan_files: gtk4::Spinner,
+    spn_clean_dangling: gtk4::Spinner,
 }
 
 impl actix::Handler<woab::Signal> for MainAppActor {
@@ -68,7 +68,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
         Ok(match msg.name() {
             "app_activate" => {
                 let woab::params!(
-                    app: gtk::Application,
+                    app: gtk4::Application,
                 ) = msg.params()?;
                 app.add_window(&self.widgets.app_main);
                 self.widgets.app_main.show();
@@ -76,7 +76,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
             }
             "app_shutdown" => {
                 let woab::params!(
-                    app: gtk::Application,
+                    app: gtk4::Application,
                 ) = msg.params()?;
                 app.quit();
                 None
@@ -90,7 +90,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 None
             }
             "scan_files" => {
-                let button: gtk::Button = msg.param(0)?;
+                let button: gtk4::Button = msg.param(0)?;
                 self.widgets.spn_scan_files.start();
                 button.set_sensitive(false);
                 ctx.spawn(
@@ -124,7 +124,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 None
             }
             "clean_dangling" => {
-                let button: gtk::Button = msg.param(0)?;
+                let button: gtk4::Button = msg.param(0)?;
                 self.widgets.spn_clean_dangling.start();
                 button.set_sensitive(false);
                 ctx.spawn(
@@ -152,12 +152,16 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 None
             }
             "new_series" => {
-                let bld = self.factories.row_series.instantiate();
+                let series_ctx = Context::new();
+                let bld = self
+                    .factories
+                    .row_series
+                    .instantiate_route_to(series_ctx.address());
                 let widgets: SeriesWidgets = bld.widgets().unwrap();
                 widgets
                     .cbo_series_media_type
                     .set_model(Some(&self.widgets.lsm_media_types));
-                self.widgets.lst_serieses.add(&widgets.row_series);
+                self.widgets.lst_serieses.append(&widgets.row_series);
                 let data = models::Series {
                     id: -1,
                     media_type: 0,
@@ -167,20 +171,22 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 };
                 self.series_sort_and_filter_data
                     .set(&widgets.row_series, (0, 0, &data).into());
-                let addr = SeriesActor::builder()
-                    .widgets(widgets)
-                    .factories(self.factories.clone())
-                    .main_app(ctx.address())
-                    .model(data)
-                    .series_read_stats(models::SeriesReadStats {
-                        num_episodes: 0,
-                        num_unread: 0,
-                    })
-                    .series_sort_and_filter_data(self.series_sort_and_filter_data)
-                    .build()
-                    .start();
-                addr.do_send(crate::gui::msgs::InitiateNewRowSequence);
-                bld.connect_to(addr);
+                series_ctx
+                    .address()
+                    .do_send(crate::gui::msgs::InitiateNewRowSequence);
+                series_ctx.run(
+                    SeriesActor::builder()
+                        .widgets(widgets)
+                        .factories(self.factories.clone())
+                        .main_app(ctx.address())
+                        .model(data)
+                        .series_read_stats(models::SeriesReadStats {
+                            num_episodes: 0,
+                            num_unread: 0,
+                        })
+                        .series_sort_and_filter_data(self.series_sort_and_filter_data)
+                        .build(),
+                );
                 let lst_serieses = self.widgets.lst_serieses.clone();
                 ctx.spawn(
                     async move {
@@ -194,14 +200,17 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 None
             }
             "open_media_types_window" => {
-                let bld = self.factories.win_media_types.instantiate();
-                let addr = MediaTypesActor::builder()
-                    .factories(self.factories.clone())
-                    .widgets(bld.widgets().unwrap())
-                    .main_app(ctx.address())
-                    .build()
-                    .start();
-                bld.connect_to(addr);
+                MediaTypesActor::create(|media_types_ctx| {
+                    let bld = self
+                        .factories
+                        .win_media_types
+                        .instantiate_route_to(media_types_ctx.address());
+                    MediaTypesActor::builder()
+                        .factories(self.factories.clone())
+                        .widgets(bld.widgets().unwrap())
+                        .main_app(ctx.address())
+                        .build()
+                });
                 None
             }
             _ => msg.cant_handle()?,
@@ -358,7 +367,11 @@ impl
                     entry.get().do_send(gui::msgs::UpdateActorData(data));
                 }
                 hashbrown::hash_map::Entry::Vacant(entry) => {
-                    let bld = self.factories.row_series.instantiate();
+                    let series_ctx = Context::new();
+                    let bld = self
+                        .factories
+                        .row_series
+                        .instantiate_route_to(series_ctx.address());
                     let widgets: SeriesWidgets = bld.widgets().unwrap();
                     widgets
                         .cbo_series_media_type
@@ -367,18 +380,18 @@ impl
                         &widgets.row_series,
                         (data.extra.num_episodes, data.extra.num_unread, &data.data).into(),
                     );
-                    self.widgets.lst_serieses.add(&widgets.row_series);
-                    let addr = SeriesActor::builder()
-                        .widgets(widgets)
-                        .factories(self.factories.clone())
-                        .main_app(ctx.address())
-                        .model(data.data)
-                        .series_read_stats(data.extra)
-                        .series_sort_and_filter_data(self.series_sort_and_filter_data)
-                        .build()
-                        .start();
-                    entry.insert(addr.clone());
-                    bld.connect_to(addr);
+                    self.widgets.lst_serieses.append(&widgets.row_series);
+                    entry.insert(series_ctx.address());
+                    series_ctx.run(
+                        SeriesActor::builder()
+                            .widgets(widgets)
+                            .factories(self.factories.clone())
+                            .main_app(ctx.address())
+                            .model(data.data)
+                            .series_read_stats(data.extra)
+                            .series_sort_and_filter_data(self.series_sort_and_filter_data)
+                            .build(),
+                    );
                 }
             }
         }

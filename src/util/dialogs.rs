@@ -1,27 +1,27 @@
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
-pub async fn run_set_directory_dialog(widget: gtk::Entry, base_dir: Option<String>) {
-    let dialog = gtk::FileChooserDialog::with_buttons::<gtk::ApplicationWindow>(
-        None,
-        None,
-        gtk::FileChooserAction::CreateFolder,
+pub async fn run_set_directory_dialog(widget: gtk4::Entry, base_dir: Option<String>) {
+    let dialog = gtk4::FileChooserDialog::new(
+        None::<&str>,
+        None::<&gtk4::ApplicationWindow>,
+        gtk4::FileChooserAction::SelectFolder,
         &[
-            ("_Cancel", gtk::ResponseType::Cancel),
-            ("_Select", gtk::ResponseType::Accept),
+            ("_Cancel", gtk4::ResponseType::Cancel),
+            ("_Select", gtk4::ResponseType::Accept),
         ],
     );
     let current_choice = widget.text();
     if current_choice.is_empty() {
         if let Some(base_dir) = base_dir {
-            dialog.set_current_folder(base_dir.as_str());
+            dialog.set_current_folder(Some(&gio::File::for_path(base_dir))).unwrap();
         }
     } else {
-        dialog.set_filename(current_choice.as_str());
+        dialog.set_file(&gio::File::for_path(current_choice)).unwrap();
     }
-    let result = woab::run_dialog(&dialog, false).await;
-    let filename = dialog.filename();
-    dialog.close();
-    if let (gtk::ResponseType::Accept, Some(filename)) = (result, filename) {
+    let result = dialog.run_future().await;
+    let filename = dialog.file().and_then(|f| f.path());
+    // dialog.close();
+    if let (gtk4::ResponseType::Accept, Some(filename)) = (result, filename) {
         widget.set_text(&filename.to_string_lossy());
     }
 }
