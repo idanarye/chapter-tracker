@@ -12,10 +12,6 @@ pub fn start_gui() -> woab::Result<()> {
     let app = gtk4::Application::builder()
         .flags(gio::ApplicationFlags::HANDLES_COMMAND_LINE)
         .build();
-    app.connect_command_line(|app, _| {
-        app.activate();
-        0
-    });
     woab::main(app, |app| {
         use structopt::StructOpt;
         let cli_args = crate::CliArgs::from_args();
