@@ -1,0 +1,130 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name chapter_tracker_media_types.ui -->
+  <requires lib="gtk" version="4.12"/>
+  <object class="GtkWindow">
+    <child>
+      <object class="GtkListBox">
+        <child>
+          <object class="GtkGrid">
+            <child>
+              <object class="GtkEntry">
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry">
+                <property name="primary-icon-name">folder</property>
+                <property name="secondary-icon-name">edit-clear-symbolic</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry">
+                <layout>
+                  <property name="column">2</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry">
+                <layout>
+                  <property name="column">3</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry">
+                <layout>
+                  <property name="column">4</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton">
+                <property name="label">Maintain Symlinks</property>
+                <layout>
+                  <property name="column">5</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStack">
+                <child>
+                  <object class="GtkGrid">
+                    <child>
+                      <object class="GtkButton">
+                        <property name="label">Edit</property>
+                        <layout>
+                          <property name="column">0</property>
+                          <property name="column-span">1</property>
+                          <property name="row">0</property>
+                          <property name="row-span">1</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="label">Delete</property>
+                        <layout>
+                          <property name="column">1</property>
+                          <property name="column-span">1</property>
+                          <property name="row">0</property>
+                          <property name="row-span">1</property>
+                        </layout>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkGrid">
+                    <child>
+                      <object class="GtkButton">
+                        <property name="label">New</property>
+                        <layout>
+                          <property name="column">0</property>
+                          <property name="column-span">1</property>
+                          <property name="row">0</property>
+                          <property name="row-span">1</property>
+                        </layout>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <layout>
+                  <property name="column">6</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
