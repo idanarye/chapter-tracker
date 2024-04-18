@@ -1,5 +1,4 @@
 use actix::prelude::*;
-use gio::prelude::*;
 
 mod directory;
 mod links_dir;
@@ -16,9 +15,16 @@ pub fn start_gui() -> woab::Result<()> {
         use structopt::StructOpt;
         let cli_args = crate::CliArgs::from_args();
 
-        let factories = Factories::new(FactoriesInner::read(
-            &*crate::Asset::get("gui.glade").unwrap().data,
-        )?);
+        let factories = Factories::new(FactoriesInner {
+            main: FactoriesMain::read(
+                &*crate::Asset::get("chapter_tracker_main.ui").unwrap().data,
+            )?,
+            media_types: FactoriesMediaTypes::read(
+                &*crate::Asset::get("chapter_tracker_media_types.ui")
+                    .unwrap()
+                    .data,
+            )?,
+        });
 
         let ctx = Context::new();
         woab::route_signal(app, "activate", "app_activate", ctx.address())?;
@@ -27,7 +33,7 @@ pub fn start_gui() -> woab::Result<()> {
             ctx.address()
                 .do_send(msgs::MaintainLinksDirectory(links_directory));
         }
-        let bld = factories.app_main.instantiate_route_to(ctx.address());
+        let bld = factories.main.app_main.instantiate_route_to(ctx.address());
         ctx.run(
             main_app::MainAppActor::builder()
                 .widgets(bld.widgets().unwrap())
@@ -39,16 +45,24 @@ pub fn start_gui() -> woab::Result<()> {
 }
 
 #[derive(woab::Factories)]
-pub struct FactoriesInner {
-    #[factory(extra(lsm_media_types))]
+pub struct FactoriesMain {
+    //#[factory(extra(lsm_media_types))]
     pub app_main: woab::BuilderFactory,
     pub row_series: woab::BuilderFactory,
     pub row_episode: woab::BuilderFactory,
-    #[factory(extra(lsm_directory_scan_preview, srt_directory_scan_preview))]
+    //#[factory(extra(lsm_directory_scan_preview, srt_directory_scan_preview))]
     pub row_directory: woab::BuilderFactory,
+}
 
+#[derive(woab::Factories)]
+pub struct FactoriesMediaTypes {
     pub win_media_types: woab::BuilderFactory,
     pub row_media_type: woab::BuilderFactory,
+}
+
+pub struct FactoriesInner {
+    main: FactoriesMain,
+    media_types: FactoriesMediaTypes,
 }
 
 type Factories = std::rc::Rc<FactoriesInner>;

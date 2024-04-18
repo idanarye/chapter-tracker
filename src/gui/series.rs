@@ -610,6 +610,7 @@ impl SeriesActor {
         DirectoryActor::create(|directory_ctx| {
             let bld = self
                 .factories
+                .main
                 .row_directory
                 .instantiate_route_to(directory_ctx.address());
             let widgets: DirectoryWidgets = bld.widgets().unwrap();
@@ -702,6 +703,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Episode>> for SeriesA
                 hashbrown::hash_map::Entry::Vacant(entry) => {
                     let widgets: EpisodeWidgets = self
                         .factories
+                        .main
                         .row_episode
                         .instantiate_route_to((data.id, ctx.address()))
                         .widgets()
@@ -738,6 +740,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::Directory>> for Serie
                     let directory_ctx = Context::new();
                     let bld = self
                         .factories
+                        .main
                         .row_directory
                         .instantiate_route_to(directory_ctx.address());
                     let widgets: DirectoryWidgets = bld.widgets().unwrap();

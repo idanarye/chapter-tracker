@@ -155,6 +155,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 let series_ctx = Context::new();
                 let bld = self
                     .factories
+                    .main
                     .row_series
                     .instantiate_route_to(series_ctx.address());
                 let widgets: SeriesWidgets = bld.widgets().unwrap();
@@ -203,6 +204,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 MediaTypesActor::create(|media_types_ctx| {
                     let bld = self
                         .factories
+                        .media_types
                         .win_media_types
                         .instantiate_route_to(media_types_ctx.address());
                     MediaTypesActor::builder()
@@ -370,6 +372,7 @@ impl
                     let series_ctx = Context::new();
                     let bld = self
                         .factories
+                        .main
                         .row_series
                         .instantiate_route_to(series_ctx.address());
                     let widgets: SeriesWidgets = bld.widgets().unwrap();

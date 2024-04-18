@@ -74,6 +74,7 @@ impl actix::Handler<crate::msgs::UpdateListRowData<models::MediaType>> for Media
                 hashbrown::hash_map::Entry::Vacant(entry) => {
                     let widgets: MediaTypeWidgets = self
                         .factories
+                        .media_types
                         .row_media_type
                         .instantiate_route_to((data.id, ctx.address()))
                         .widgets()
@@ -111,6 +112,7 @@ impl MediaTypesActor {
             };
         let widgets: MediaTypeWidgets = self
             .factories
+            .media_types
             .row_media_type
             .instantiate_route_to((data.id, ctx.address()))
             .widgets()
