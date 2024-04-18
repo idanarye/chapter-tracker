@@ -56,7 +56,7 @@ pub struct MainAppWidgets {
     lst_serieses: gtk4::ListBox,
     lsm_media_types: gtk4::ListStore,
     chk_series_unread: gtk4::CheckButton,
-    txt_series_filter: gtk4::Entry,
+    txt_series_filter: gtk4::SearchEntry,
     spn_scan_files: gtk4::Spinner,
     spn_clean_dangling: gtk4::Spinner,
 }

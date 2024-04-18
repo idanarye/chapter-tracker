@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use gtk4::prelude::*;
 
 mod directory;
 mod links_dir;
@@ -14,6 +15,11 @@ pub fn start_gui() -> woab::Result<()> {
     woab::main(app, |app| {
         use structopt::StructOpt;
         let cli_args = crate::CliArgs::from_args();
+
+        app.connect_command_line(|app, _| {
+            app.activate();
+            0
+        });
 
         let factories = Factories::new(FactoriesInner {
             main: FactoriesMain::read(
@@ -46,7 +52,7 @@ pub fn start_gui() -> woab::Result<()> {
 
 #[derive(woab::Factories)]
 pub struct FactoriesMain {
-    //#[factory(extra(lsm_media_types))]
+    #[factory(extra(lsm_media_types))]
     pub app_main: woab::BuilderFactory,
     pub row_series: woab::BuilderFactory,
     pub row_episode: woab::BuilderFactory,

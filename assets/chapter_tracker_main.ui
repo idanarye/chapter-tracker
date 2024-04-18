@@ -8,6 +8,7 @@
       <object class="GtkGrid">
         <child>
           <object class="GtkLabel">
+            <property name="css-classes">title</property>
             <property name="label">Chapter Tracker</property>
             <layout>
               <property name="column">0</property>
@@ -21,7 +22,7 @@
           <object class="GtkGrid">
             <property name="hexpand">True</property>
             <child>
-              <object class="GtkCheckButton">
+              <object class="GtkCheckButton" id="chk_series_unread">
                 <property name="label">Unread and/or Empty</property>
                 <layout>
                   <property name="column">0</property>
@@ -32,7 +33,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkSearchEntry">
+              <object class="GtkSearchEntry" id="txt_series_filter">
                 <layout>
                   <property name="column">1</property>
                   <property name="column-span">1</property>
@@ -51,7 +52,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSpinner"/>
+                      <object class="GtkSpinner" id="spn_scan_files"/>
                     </child>
                   </object>
                 </property>
@@ -73,7 +74,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkSpinner"/>
+                      <object class="GtkSpinner" id="spn_clean_dangling"/>
                     </child>
                   </object>
                 </property>
@@ -132,14 +133,14 @@
               <object class="GtkViewport">
                 <property name="width-request">200</property>
                 <child>
-                  <object class="GtkListBox">
+                  <object class="GtkListBox" id="lst_serieses">
                     <property name="vexpand">True</property>
                     <child>
                       <object class="GtkListBoxRow" id="row_series">
                         <child>
                           <object class="GtkGrid">
                             <child>
-                              <object class="GtkRevealer">
+                              <object class="GtkRevealer" id="rvl_episodes">
                                 <child>
                                   <object class="GtkNotebook">
                                     <child>
@@ -150,7 +151,7 @@
                                           <object class="GtkViewport">
                                             <property name="hexpand">True</property>
                                             <child>
-                                              <object class="GtkListBox">
+                                              <object class="GtkListBox" id="lst_episodes">
                                                 <property name="hexpand">True</property>
                                                 <property name="vexpand">True</property>
                                                 <child>
@@ -171,7 +172,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkEntry">
+                                                          <object class="GtkEntry" id="txt_volume">
                                                             <layout>
                                                             <property name="column">1</property>
                                                             <property name="column-span">1</property>
@@ -192,7 +193,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkEntry">
+                                                          <object class="GtkEntry" id="txt_chapter">
                                                             <layout>
                                                             <property name="column">3</property>
                                                             <property name="column-span">1</property>
@@ -202,7 +203,8 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkEntry">
+                                                          <object class="GtkEntry" id="txt_name">
+                                                            <property name="hexpand">True</property>
                                                             <layout>
                                                             <property name="column">4</property>
                                                             <property name="column-span">1</property>
@@ -212,7 +214,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkStack">
+                                                          <object class="GtkStack" id="stk_read_state">
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label">Mark Read</property>
@@ -224,7 +226,7 @@
                                                             </object>
                                                             </child>
                                                             <layout>
-                                                            <property name="column">5</property>
+                                                            <property name="column">6</property>
                                                             <property name="column-span">1</property>
                                                             <property name="row">0</property>
                                                             <property name="row-span">1</property>
@@ -235,17 +237,6 @@
                                                           <object class="GtkButton">
                                                             <property name="label">Play</property>
                                                             <layout>
-                                                            <property name="column">6</property>
-                                                            <property name="column-span">1</property>
-                                                            <property name="row">0</property>
-                                                            <property name="row-span">1</property>
-                                                            </layout>
-                                                          </object>
-                                                        </child>
-                                                        <child>
-                                                          <object class="GtkButton">
-                                                            <property name="label">Edit</property>
-                                                            <layout>
                                                             <property name="column">7</property>
                                                             <property name="column-span">1</property>
                                                             <property name="row">0</property>
@@ -254,8 +245,65 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkButton">
+                                                          <object class="GtkEntry" id="txt_file">
+                                                            <layout>
+                                                            <property name="column">5</property>
+                                                            <property name="column-span">1</property>
+                                                            <property name="row">0</property>
+                                                            <property name="row-span">1</property>
+                                                            </layout>
+                                                          </object>
+                                                        </child>
+                                                        <child>
+                                                          <object class="GtkStack" id="stk_episode_edit">
+                                                            <child>
+                                                            <object class="GtkGrid">
+                                                            <child>
+                                                            <object class="GtkButton">
+                                                            <property name="label">Edit</property>
+                                                            <layout>
+                                                            <property name="column">0</property>
+                                                            <property name="row">0</property>
+                                                            </layout>
+                                                            </object>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton">
                                                             <property name="label">Delete</property>
+                                                            <layout>
+                                                            <property name="column">1</property>
+                                                            <property name="row">0</property>
+                                                            </layout>
+                                                            </object>
+                                                            </child>
+                                                            </object>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkGrid">
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_save_episode">
+                                                            <property name="label">Save</property>
+                                                            <layout>
+                                                            <property name="column">0</property>
+                                                            <property name="column-span">1</property>
+                                                            <property name="row">0</property>
+                                                            <property name="row-span">1</property>
+                                                            </layout>
+                                                            </object>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_cancel_episode_edit">
+                                                            <property name="label">Cancel</property>
+                                                            <layout>
+                                                            <property name="column">1</property>
+                                                            <property name="column-span">1</property>
+                                                            <property name="row">0</property>
+                                                            <property name="row-span">1</property>
+                                                            </layout>
+                                                            </object>
+                                                            </child>
+                                                            </object>
+                                                            </child>
                                                             <layout>
                                                             <property name="column">8</property>
                                                             <property name="column-span">1</property>
@@ -280,16 +328,17 @@
                                         <child>
                                           <object class="GtkViewport">
                                             <child>
-                                              <object class="GtkListBox">
+                                              <object class="GtkListBox" id="lst_directories">
                                                 <property name="vexpand">True</property>
                                                 <child>
                                                   <object class="GtkListBoxRow" id="row_directory">
                                                     <child>
                                                       <object class="GtkGrid">
                                                         <child>
-                                                          <object class="GtkEntry">
+                                                          <object class="GtkEntry" id="txt_directory_pattern">
                                                             <property name="editable">False</property>
                                                             <property name="hexpand">True</property>
+                                                            <property name="placeholder-text">Pattern</property>
                                                             <layout>
                                                             <property name="column">0</property>
                                                             <property name="column-span">1</property>
@@ -299,7 +348,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkEntry">
+                                                          <object class="GtkEntry" id="txt_directory_dir">
                                                             <property name="editable">False</property>
                                                             <property name="primary-icon-name">folder</property>
                                                             <layout>
@@ -311,7 +360,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkEntry">
+                                                          <object class="GtkEntry" id="txt_directory_volume">
                                                             <property name="editable">False</property>
                                                             <layout>
                                                             <property name="column">2</property>
@@ -322,7 +371,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkCheckButton">
+                                                          <object class="GtkCheckButton" id="chk_directory_recursive">
                                                             <property name="label">Recursive</property>
                                                             <layout>
                                                             <property name="column">3</property>
@@ -333,7 +382,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkStack">
+                                                          <object class="GtkStack" id="stk_directory_buttons">
                                                             <child>
                                                             <object class="GtkGrid">
                                                             <child>
@@ -363,21 +412,10 @@
                                                             <child>
                                                             <object class="GtkGrid">
                                                             <child>
-                                                            <object class="GtkButton">
-                                                            <property name="label">Save</property>
+                                                            <object class="GtkButton" id="btn_save_new_directory">
+                                                            <property name="label">New</property>
                                                             <layout>
                                                             <property name="column">0</property>
-                                                            <property name="column-span">1</property>
-                                                            <property name="row">0</property>
-                                                            <property name="row-span">1</property>
-                                                            </layout>
-                                                            </object>
-                                                            </child>
-                                                            <child>
-                                                            <object class="GtkButton">
-                                                            <property name="label">Cancel</property>
-                                                            <layout>
-                                                            <property name="column">1</property>
                                                             <property name="column-span">1</property>
                                                             <property name="row">0</property>
                                                             <property name="row-span">1</property>
@@ -395,7 +433,7 @@
                                                           </object>
                                                         </child>
                                                         <child>
-                                                          <object class="GtkRevealer">
+                                                          <object class="GtkRevealer" id="rvl_directory_scan_preview">
                                                             <child>
                                                             <object class="GtkTreeView">
                                                             <property name="enable-grid-lines">both</property>
@@ -430,7 +468,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkToggleButton">
+                              <object class="GtkToggleButton" id="tgl_series_unread">
                                 <property name="width-request">100</property>
                                 <layout>
                                   <property name="column">0</property>
@@ -441,12 +479,8 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkComboBox">
-                                <property name="child">
-                                  <object class="GtkEntry">
-                                    <property name="editable">False</property>
-                                  </object>
-                                </property>
+                              <object class="GtkComboBox" id="cbo_series_media_type">
+                                <property name="has-entry">True</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="column-span">1</property>
@@ -456,8 +490,9 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkEntry">
+                              <object class="GtkEntry" id="txt_series_name">
                                 <property name="editable">False</property>
+                                <property name="placeholder-text">Series Name</property>
                                 <layout>
                                   <property name="column">2</property>
                                   <property name="column-span">1</property>
@@ -467,8 +502,9 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkEntry">
+                              <object class="GtkEntry" id="txt_download_command_dir">
                                 <property name="editable">False</property>
+                                <property name="placeholder-text">Download Command Dir</property>
                                 <property name="primary-icon-name">folder</property>
                                 <property name="secondary-icon-name">emblem-unreadable</property>
                                 <layout>
@@ -480,8 +516,9 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkEntry">
+                              <object class="GtkEntry" id="txt_download_command">
                                 <property name="editable">False</property>
+                                <property name="placeholder-text">Download Command</property>
                                 <property name="primary-icon-name">application-x-executable</property>
                                 <property name="secondary-icon-name">emblem-unreadable</property>
                                 <layout>
@@ -493,7 +530,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkStack">
+                              <object class="GtkStack" id="stk_series_edit">
                                 <child>
                                   <object class="GtkGrid">
                                     <child>
@@ -523,7 +560,7 @@
                                 <child>
                                   <object class="GtkGrid">
                                     <child>
-                                      <object class="GtkButton">
+                                      <object class="GtkButton" id="btn_save_series">
                                         <property name="label">Save</property>
                                         <layout>
                                           <property name="column">0</property>
@@ -534,7 +571,7 @@
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="GtkButton">
+                                      <object class="GtkButton" id="btn_cancel_series_edit">
                                         <property name="label">Cancel</property>
                                         <layout>
                                           <property name="column">1</property>
@@ -544,6 +581,11 @@
                                         </layout>
                                       </object>
                                     </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="btn_save_new_series">
+                                    <property name="label">New</property>
                                   </object>
                                 </child>
                                 <layout>
@@ -572,5 +614,11 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkListStore" id="lsm_media_types">
+    <columns>
+      <column type="gchararray"/>
+      <column type="gchararray"/>
+    </columns>
   </object>
 </interface>
