@@ -135,7 +135,7 @@
                   <object class="GtkListBox">
                     <property name="vexpand">True</property>
                     <child>
-                      <object class="GtkListBoxRow">
+                      <object class="GtkListBoxRow" id="row_series">
                         <child>
                           <object class="GtkGrid">
                             <child>
@@ -154,7 +154,7 @@
                                                 <property name="hexpand">True</property>
                                                 <property name="vexpand">True</property>
                                                 <child>
-                                                  <object class="GtkListBoxRow">
+                                                  <object class="GtkListBoxRow" id="row_episode">
                                                     <property name="hexpand">True</property>
                                                     <child>
                                                       <object class="GtkGrid">
@@ -283,7 +283,7 @@
                                               <object class="GtkListBox">
                                                 <property name="vexpand">True</property>
                                                 <child>
-                                                  <object class="GtkListBoxRow">
+                                                  <object class="GtkListBoxRow" id="row_directory">
                                                     <child>
                                                       <object class="GtkGrid">
                                                         <child>
