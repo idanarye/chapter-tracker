@@ -1,7 +1,10 @@
 use actix::prelude::*;
 use gtk4::prelude::*;
 
+use crate::gui::gobjects::MediaTypeGObject;
+
 mod directory;
+mod gobjects;
 mod links_dir;
 mod main_app;
 mod media_types;
@@ -40,10 +43,12 @@ pub fn start_gui() -> woab::Result<()> {
                 .do_send(msgs::MaintainLinksDirectory(links_directory));
         }
         let bld = factories.main.app_main.instantiate_route_to(ctx.address());
+
         ctx.run(
             main_app::MainAppActor::builder()
                 .widgets(bld.widgets().unwrap())
                 .factories(factories)
+                .lsm_media_types(gio::ListStore::new::<MediaTypeGObject>())
                 .build(),
         );
         Ok(())
@@ -52,7 +57,6 @@ pub fn start_gui() -> woab::Result<()> {
 
 #[derive(woab::Factories)]
 pub struct FactoriesMain {
-    #[factory(extra(lsm_media_types))]
     pub app_main: woab::BuilderFactory,
     pub row_series: woab::BuilderFactory,
     pub row_episode: woab::BuilderFactory,

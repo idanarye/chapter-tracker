@@ -470,19 +470,9 @@
                             <child>
                               <object class="GtkToggleButton" id="tgl_series_unread">
                                 <property name="width-request">100</property>
+                                <signal name="toggled" handler="toggle_episodes"/>
                                 <layout>
                                   <property name="column">0</property>
-                                  <property name="column-span">1</property>
-                                  <property name="row">0</property>
-                                  <property name="row-span">1</property>
-                                </layout>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkComboBox" id="cbo_series_media_type">
-                                <property name="has-entry">True</property>
-                                <layout>
-                                  <property name="column">1</property>
                                   <property name="column-span">1</property>
                                   <property name="row">0</property>
                                   <property name="row-span">1</property>
@@ -596,6 +586,18 @@
                                 </layout>
                               </object>
                             </child>
+                            <child>
+                              <object class="GtkDropDown" id="drp_series_media_type">
+                                <property name="enable-search">True</property>
+                                <property name="sensitive">False</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="column-span">1</property>
+                                  <property name="row">0</property>
+                                  <property name="row-span">1</property>
+                                </layout>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
@@ -614,11 +616,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkListStore" id="lsm_media_types">
-    <columns>
-      <column type="gchararray"/>
-      <column type="gchararray"/>
-    </columns>
   </object>
 </interface>

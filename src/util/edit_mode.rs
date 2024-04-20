@@ -207,6 +207,20 @@ impl WidgetForEditMode<bool> for gtk4::ToggleButton {
     }
 }
 
+impl WidgetForEditMode<u32> for gtk4::DropDown {
+    fn set_editability(&self, editability: bool) {
+        self.set_sensitive(editability);
+    }
+
+    fn get_value(&self) -> u32 {
+        self.selected()
+    }
+
+    fn set_value(&self, value: u32) {
+        self.set_selected(value);
+    }
+}
+
 pub struct InitiateSave<T = ()>(pub T);
 
 impl<T> actix::Message for InitiateSave<T> {

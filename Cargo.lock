@@ -2755,7 +2755,7 @@ dependencies = [
 
 [[package]]
 name = "woab"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "actix",
  "gdk4",
@@ -2772,7 +2772,7 @@ dependencies = [
 
 [[package]]
 name = "woab-macros"
-version = "0.7.0"
+version = "0.9.0"
 dependencies = [
  "proc-macro2",
  "quote",

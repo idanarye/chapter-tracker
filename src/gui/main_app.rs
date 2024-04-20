@@ -12,6 +12,8 @@ use gui::links_dir::LinksDirectoryMaintainer;
 use gui::media_types::MediaTypesActor;
 use gui::series::{SeriesActor, SeriesSortAndFilterData, SeriesWidgets};
 
+use super::gobjects::MediaTypeGObject;
+
 #[derive(typed_builder::TypedBuilder)]
 pub struct MainAppActor {
     pub widgets: MainAppWidgets,
@@ -22,6 +24,7 @@ pub struct MainAppActor {
     series_sort_and_filter_data: TypedQuark<SeriesSortAndFilterData>,
     #[builder(setter(skip), default)]
     links_directory_maintainers: Vec<actix::Addr<LinksDirectoryMaintainer>>,
+    lsm_media_types: gio::ListStore,
 }
 
 impl actix::Actor for MainAppActor {
@@ -54,7 +57,6 @@ impl actix::Actor for MainAppActor {
 pub struct MainAppWidgets {
     pub app_main: gtk4::ApplicationWindow,
     lst_serieses: gtk4::ListBox,
-    lsm_media_types: gtk4::ListStore,
     chk_series_unread: gtk4::CheckButton,
     txt_series_filter: gtk4::SearchEntry,
     spn_scan_files: gtk4::Spinner,
@@ -160,8 +162,8 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                     .instantiate_route_to(series_ctx.address());
                 let widgets: SeriesWidgets = bld.widgets().unwrap();
                 widgets
-                    .cbo_series_media_type
-                    .set_model(Some(&self.widgets.lsm_media_types));
+                    .drp_series_media_type
+                    .set_model(Some(&self.lsm_media_types));
                 self.widgets.lst_serieses.append(&widgets.row_series);
                 let data = models::Series {
                     id: -1,
@@ -291,16 +293,17 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
         _: gui::msgs::UpdateMediaTypesList,
         _ctx: &mut Self::Context,
     ) -> Self::Result {
-        self.widgets.lsm_media_types.clear();
+        self.lsm_media_types.remove_all();
+        self.lsm_media_types
+            .append(&MediaTypeGObject::new(0, "".to_owned()));
         Box::pin(
             stream_query::<models::MediaType>(sqlx::query_as("SELECT * FROM media_types"))
                 .into_actor(self)
                 .map(|media_type, actor, _ctx| {
                     let media_type = media_type.unwrap();
-                    let lsm = &actor.widgets.lsm_media_types;
-                    let it = lsm.append();
-                    lsm.set_value(&it, 0, &media_type.id.to_string().to_value());
-                    lsm.set_value(&it, 1, &media_type.name.to_value());
+                    actor
+                        .lsm_media_types
+                        .append(&MediaTypeGObject::new(media_type.id, media_type.name));
                 })
                 .finish()
                 .map(|_, _, _| Ok(())),
@@ -377,8 +380,15 @@ impl
                         .instantiate_route_to(series_ctx.address());
                     let widgets: SeriesWidgets = bld.widgets().unwrap();
                     widgets
-                        .cbo_series_media_type
-                        .set_model(Some(&self.widgets.lsm_media_types));
+                        .drp_series_media_type
+                        .set_model(Some(&self.lsm_media_types));
+                    widgets.drp_series_media_type.set_expression(Some(
+                        gtk4::PropertyExpression::new(
+                            MediaTypeGObject::static_type(),
+                            None::<gtk4::Expression>,
+                            "name",
+                        ),
+                    ));
                     self.series_sort_and_filter_data.set(
                         &widgets.row_series,
                         (data.extra.num_episodes, data.extra.num_unread, &data.data).into(),

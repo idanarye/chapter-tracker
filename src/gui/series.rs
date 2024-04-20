@@ -11,6 +11,8 @@ use crate::util::db;
 use crate::util::edit_mode::EditMode;
 use crate::util::TypedQuark;
 
+use super::gobjects::MediaTypeGObject;
+
 #[derive(typed_builder::TypedBuilder, woab::Removable)]
 #[removable(self.widgets.row_series in gtk4::ListBox)]
 pub struct SeriesActor {
@@ -73,8 +75,8 @@ pub struct SeriesWidgets {
     pub row_series: gtk4::ListBoxRow,
     #[prop_sync(set, get)]
     txt_series_name: gtk4::Entry,
-    #[prop_sync("active-id" as String, set, get)]
-    pub cbo_series_media_type: gtk4::ComboBox,
+    #[prop_sync("selected" as u32, set, get)]
+    pub drp_series_media_type: gtk4::DropDown,
     #[prop_sync(set, get)]
     txt_download_command: gtk4::Entry,
     #[prop_sync(set, get)]
@@ -260,10 +262,19 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
         let series_id = self.model.id;
         let SeriesWidgetsPropGetter {
             txt_series_name,
-            cbo_series_media_type,
+            drp_series_media_type,
             txt_download_command,
             txt_download_command_dir,
         } = self.widgets.get_props();
+        let media_type_id = self
+            .widgets
+            .drp_series_media_type
+            .model()
+            .unwrap()
+            .item(drp_series_media_type)
+            .unwrap()
+            .downcast::<MediaTypeGObject>().unwrap()
+            .id();
         Box::pin(
             async move {
                 if series_id < 0 {
@@ -274,7 +285,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
                 "#,
                     )
                     .bind(txt_series_name)
-                    .bind(cbo_series_media_type.parse::<i64>().unwrap())
+                    .bind(media_type_id)
                     .bind(txt_download_command)
                     .bind(txt_download_command_dir);
                     let mut con = db::request_connection().await?;
@@ -292,7 +303,7 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
                 "#,
                     )
                     .bind(txt_series_name)
-                    .bind(cbo_series_media_type.parse::<i64>().unwrap())
+                    .bind(media_type_id)
                     .bind(txt_download_command)
                     .bind(txt_download_command_dir)
                     .bind(series_id);
@@ -535,7 +546,20 @@ impl SeriesActor {
     fn update_widgets_from_model(&self) {
         self.widgets.set_props(&SeriesWidgetsPropSetter {
             txt_series_name: &self.model.name,
-            cbo_series_media_type: self.model.media_type.to_string(),
+            drp_series_media_type: {
+                self.widgets
+                    .drp_series_media_type
+                    .model()
+                    .unwrap()
+                    .iter::<MediaTypeGObject>()
+                    .position(|media_type| {
+                        let Ok(media_type) = media_type else {
+                            return false;
+                        };
+                        media_type.id() == self.model.media_type
+                    })
+                    .unwrap_or_default() as u32
+            },
             txt_download_command: self.model.download_command.as_deref().unwrap_or(""),
             txt_download_command_dir: self.model.download_command_dir.as_deref().unwrap_or(""),
         });
@@ -647,18 +671,18 @@ impl SeriesActor {
                     }
                 },
             )
-            .with_edit_widget(
-                self.widgets.cbo_series_media_type.clone(),
-                "changed",
-                self.model.media_type,
-                |media_type| {
-                    if media_type < &0 {
-                        Err("media type must not be empty".to_owned())
-                    } else {
-                        Ok(())
-                    }
-                },
-            )
+            //.with_edit_widget(
+            //self.widgets.drp_series_media_type.clone(),
+            //"changed",
+            //self.model.media_type,
+            //|media_type| {
+            //if media_type < &0 {
+            //Err("media type must not be empty".to_owned())
+            //} else {
+            //Ok(())
+            //}
+            //},
+            //)
             .with_edit_widget(
                 self.widgets.txt_download_command.clone(),
                 "changed",
