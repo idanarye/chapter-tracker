@@ -315,6 +315,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
             }
             "delete_media_type" => {
                 let media_type_name = media_type.model.name.clone();
+                let win_media_types = self.widgets.win_media_types.clone();
                 ctx.spawn(
                     async move {
                         let mut con = db::request_connection().await.unwrap();
@@ -325,8 +326,8 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                                 .await
                                 .unwrap();
                         if 0 < num_serieses {
-                            gtk4::MessageDialog::new(
-                                None::<&gtk4::Window>,
+                            let dialog = gtk4::MessageDialog::new(
+                                Some(&win_media_types),
                                 gtk4::DialogFlags::MODAL,
                                 gtk4::MessageType::Error,
                                 gtk4::ButtonsType::Close,
@@ -334,20 +335,20 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                                     "Cannot delete {:?} - {} serieses are using it",
                                     media_type_name, num_serieses
                                 ),
-                            )
-                            .run_future()
-                            .await;
+                            );
+                            dialog.run_future().await;
+                            dialog.close();
                             false
                         } else {
-                            let user_decision = gtk4::MessageDialog::new(
-                                None::<&gtk4::ApplicationWindow>,
+                            let dialog = gtk4::MessageDialog::new(
+                                Some(&win_media_types),
                                 gtk4::DialogFlags::MODAL,
                                 gtk4::MessageType::Warning,
                                 gtk4::ButtonsType::YesNo,
                                 &format!("Are you sure you want to delete {:?}?", media_type_name),
-                            )
-                            .run_future()
-                            .await;
+                            );
+                            let user_decision =dialog.run_future().await;
+                            dialog.close();
                             if user_decision == gtk4::ResponseType::Yes {
                                 sqlx::query("DELETE FROM media_types WHERE id = ?")
                                     .bind(media_type_id)
