@@ -78,7 +78,7 @@
 	(1,98,"GtkButton","btn_save_episode",97,None,None,None,None,None,None),
 	(1,99,"GtkButton","btn_cancel_episode_edit",97,None,None,None,None,None,None),
 	(1,100,"GtkStackPage",None,41,None,None,None,-1,None,None),
-	(1,101,"GtkStackPage","mid-edit",41,None,None,None,-1,None,None),
+	(1,101,"GtkStackPage",None,41,None,None,None,-1,None,None),
 	(1,102,"GtkStackPage",None,41,None,None,None,-1,None,None),
 	(1,103,"GtkGrid",None,100,None,None,None,-1,None,None),
 	(1,104,"GtkGrid",None,101,None,None,None,-1,None,None),
@@ -192,6 +192,7 @@
 	(1,100,"GtkStackPage","child",None,None,None,None,None,103,None,None,None,None),
 	(1,100,"GtkStackPage","name","normal",None,None,None,None,None,None,None,None,None),
 	(1,101,"GtkStackPage","child",None,None,None,None,None,104,None,None,None,None),
+	(1,101,"GtkStackPage","name","mid-edit",None,None,None,None,None,None,None,None,None),
 	(1,102,"GtkStackPage","child",None,None,None,None,None,105,None,None,None,None),
 	(1,102,"GtkStackPage","name","new",None,None,None,None,None,None,None,None,None),
 	(1,105,"GtkButton","label","New",None,None,None,None,None,None,None,None,None),
@@ -446,7 +447,11 @@
 	(6,1,7,"GtkSearchEntry","search-changed","series_filter_changed",None,None,None,None,None),
 	(7,1,8,"GtkButton","clicked","scan_files",None,None,None,None,None),
 	(8,1,9,"GtkButton","clicked","clean_dangling",None,None,None,None,None),
-	(9,1,12,"GtkButton","clicked","new_series",None,None,None,None,None)
+	(9,1,12,"GtkButton","clicked","new_series",None,None,None,None,None),
+	(10,1,39,"GtkEntry","icon-press","open_download_command_directory_dialog",None,None,None,None,None),
+	(11,1,40,"GtkEntry","icon-press","execute_download_command",None,None,None,None,None),
+	(12,1,106,"GtkButton","clicked","edit_series",None,None,None,None,None),
+	(13,1,107,"GtkButton","clicked","delete_series",None,None,None,None,None)
   </object_signal>
   <object_data>
 	(1,3,"GtkWidget",2,2,None,1,None,None,None,None),

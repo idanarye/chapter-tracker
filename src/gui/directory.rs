@@ -3,6 +3,7 @@ use gtk4::prelude::*;
 
 use crate::models;
 use crate::util::db;
+use crate::util::dialogs::find_window_widget;
 use crate::util::edit_mode::EditMode;
 
 use sqlx::prelude::*;
@@ -235,7 +236,7 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
             }
             "delete_directory" => {
                 let dialog = gtk4::MessageDialog::new(
-                    None::<&gtk4::ApplicationWindow>,
+                    find_window_widget(self.widgets.row_directory.clone()).as_ref(),
                     gtk4::DialogFlags::MODAL,
                     gtk4::MessageType::Warning,
                     gtk4::ButtonsType::YesNo,
@@ -249,6 +250,7 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                 ctx.spawn(
                     async move {
                         let result = dialog.run_future().await;
+                        dialog.close();
                         if result != gtk4::ResponseType::Yes {
                             return;
                         }

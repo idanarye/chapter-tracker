@@ -10,6 +10,7 @@ use sqlx::prelude::*;
 use crate::gui::directory::{DirectoryActor, DirectoryWidgets};
 use crate::models;
 use crate::util::db;
+use crate::util::dialogs::find_window_widget;
 use crate::util::edit_mode::EditMode;
 use crate::util::TypedQuark;
 
@@ -149,7 +150,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
             }
             "delete_series" => {
                 let dialog = gtk4::MessageDialog::new(
-                    None::<&gtk4::ApplicationWindow>,
+                    find_window_widget(self.widgets.row_series.clone()).as_ref(),
                     gtk4::DialogFlags::MODAL,
                     gtk4::MessageType::Warning,
                     gtk4::ButtonsType::YesNo,
@@ -160,6 +161,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 ctx.spawn(
                     async move {
                         let result = dialog.run_future().await;
+                        dialog.close();
                         if result != gtk4::ResponseType::Yes {
                             return;
                         }
@@ -275,7 +277,8 @@ impl actix::Handler<crate::util::edit_mode::InitiateSave> for SeriesActor {
             .unwrap()
             .item(drp_series_media_type)
             .unwrap()
-            .downcast::<MediaTypeGObject>().unwrap()
+            .downcast::<MediaTypeGObject>()
+            .unwrap()
             .id();
         Box::pin(
             async move {
@@ -467,7 +470,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                 let lst_episodes = self.widgets.lst_episodes.clone();
                 let row_episode = episode.widgets.row_episode.clone();
                 let dialog = gtk4::MessageDialog::new(
-                    None::<&gtk4::ApplicationWindow>,
+                    find_window_widget(self.widgets.row_series.clone()).as_ref(),
                     gtk4::DialogFlags::MODAL,
                     gtk4::MessageType::Warning,
                     gtk4::ButtonsType::YesNo,
@@ -476,6 +479,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                 ctx.spawn(
                     async move {
                         let result = dialog.run_future().await;
+                        dialog.close();
                         if result != gtk4::ResponseType::Yes {
                             return;
                         }
@@ -549,19 +553,17 @@ impl SeriesActor {
         self.widgets.set_props(&SeriesWidgetsPropSetter {
             txt_series_name: &self.model.name,
             drp_series_media_type: {
-                let model = self.widgets
-                    .drp_series_media_type
-                    .model()
-                    .unwrap();
-                let result = model.iter::<MediaTypeGObject>()
+                let model = self.widgets.drp_series_media_type.model().unwrap();
+                let result = model
+                    .iter::<MediaTypeGObject>()
                     .position(|media_type| {
                         let Ok(media_type) = media_type else {
                             return false;
                         };
                         media_type.id() == self.model.media_type
                     })
-                .map(|pos| pos as u32)
-                .unwrap_or_else(|| model.n_items());
+                    .map(|pos| pos as u32)
+                    .unwrap_or_else(|| model.n_items());
                 result
             },
             txt_download_command: self.model.download_command.as_deref().unwrap_or(""),
@@ -662,7 +664,13 @@ impl SeriesActor {
     }
 
     fn add_verifications_to_edit_mode(&self, edit_mode: EditMode) -> EditMode {
-        let media_types_model: gio::ListStore = self.widgets.drp_series_media_type.model().unwrap().downcast().unwrap();
+        let media_types_model: gio::ListStore = self
+            .widgets
+            .drp_series_media_type
+            .model()
+            .unwrap()
+            .downcast()
+            .unwrap();
         edit_mode
             .with_edit_widget(
                 self.widgets.txt_series_name.clone(),
@@ -680,12 +688,22 @@ impl SeriesActor {
                 self.widgets.drp_series_media_type.clone(),
                 "notify::selected",
                 {
-                    self.model.media_type.try_into().ok().and_then(|media_type_id: i64| {
-                        media_types_model.iter::<MediaTypeGObject>().position(|media_type| {
-                            let Ok(media_type) = media_type else { return false };
-                            media_type.id() == media_type_id
-                        }).map(|pos| pos as u32)
-                    }).unwrap_or_else(|| media_types_model.n_items())
+                    self.model
+                        .media_type
+                        .try_into()
+                        .ok()
+                        .and_then(|media_type_id: i64| {
+                            media_types_model
+                                .iter::<MediaTypeGObject>()
+                                .position(|media_type| {
+                                    let Ok(media_type) = media_type else {
+                                        return false;
+                                    };
+                                    media_type.id() == media_type_id
+                                })
+                                .map(|pos| pos as u32)
+                        })
+                        .unwrap_or_else(|| media_types_model.n_items())
                 },
                 move |selected_index| {
                     if media_types_model.item(*selected_index).is_some() {
@@ -992,15 +1010,12 @@ impl actix::Handler<crate::gui::msgs::RegisterActorAfterNew<crate::gui::director
 
 impl SeriesWidgets {
     pub fn configure_after_creation(&self, lsm_media_types: &gio::ListStore) {
-        self
-            .drp_series_media_type
-            .set_model(Some(lsm_media_types));
-        self.drp_series_media_type.set_expression(Some(
-                gtk4::PropertyExpression::new(
-                    MediaTypeGObject::static_type(),
-                    None::<gtk4::Expression>,
-                    "name",
-                ),
-        ));
+        self.drp_series_media_type.set_model(Some(lsm_media_types));
+        self.drp_series_media_type
+            .set_expression(Some(gtk4::PropertyExpression::new(
+                MediaTypeGObject::static_type(),
+                None::<gtk4::Expression>,
+                "name",
+            )));
     }
 }
