@@ -137,6 +137,8 @@
                     <property name="vexpand">True</property>
                     <child>
                       <object class="GtkListBoxRow" id="row_series">
+                        <property name="activatable">False</property>
+                        <property name="selectable">False</property>
                         <child>
                           <object class="GtkGrid">
                             <child>
@@ -156,7 +158,9 @@
                                                 <property name="vexpand">True</property>
                                                 <child>
                                                   <object class="GtkListBoxRow" id="row_episode">
+                                                    <property name="activatable">False</property>
                                                     <property name="hexpand">True</property>
+                                                    <property name="selectable">False</property>
                                                     <child>
                                                       <object class="GtkGrid">
                                                         <property name="hexpand">True</property>
@@ -216,13 +220,25 @@
                                                         <child>
                                                           <object class="GtkStack" id="stk_read_state">
                                                             <child>
+                                                            <object class="GtkStackPage">
+                                                            <property name="child">
                                                             <object class="GtkButton">
+                                                            <property name="css-classes">episode-is-not-read</property>
                                                             <property name="label">Mark Read</property>
+                                                            </object>
+                                                            </property>
+                                                            <property name="name">episode-is-not-read</property>
                                                             </object>
                                                             </child>
                                                             <child>
+                                                            <object class="GtkStackPage">
+                                                            <property name="child">
                                                             <object class="GtkButton">
+                                                            <property name="css-classes">episode-is-read</property>
                                                             <property name="label">Mark Unread</property>
+                                                            </object>
+                                                            </property>
+                                                            <property name="name">episode-is-read</property>
                                                             </object>
                                                             </child>
                                                             <layout>
@@ -257,13 +273,17 @@
                                                         <child>
                                                           <object class="GtkStack" id="stk_episode_edit">
                                                             <child>
+                                                            <object class="GtkStackPage">
+                                                            <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label">Edit</property>
                                                             <layout>
                                                             <property name="column">0</property>
+                                                            <property name="column-span">1</property>
                                                             <property name="row">0</property>
+                                                            <property name="row-span">1</property>
                                                             </layout>
                                                             </object>
                                                             </child>
@@ -272,13 +292,20 @@
                                                             <property name="label">Delete</property>
                                                             <layout>
                                                             <property name="column">1</property>
+                                                            <property name="column-span">1</property>
                                                             <property name="row">0</property>
+                                                            <property name="row-span">1</property>
                                                             </layout>
                                                             </object>
                                                             </child>
                                                             </object>
+                                                            </property>
+                                                            <property name="name">normal</property>
+                                                            </object>
                                                             </child>
                                                             <child>
+                                                            <object class="GtkStackPage" id="mid-edit">
+                                                            <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
                                                             <object class="GtkButton" id="btn_save_episode">
@@ -302,6 +329,8 @@
                                                             </layout>
                                                             </object>
                                                             </child>
+                                                            </object>
+                                                            </property>
                                                             </object>
                                                             </child>
                                                             <layout>
@@ -332,6 +361,8 @@
                                                 <property name="vexpand">True</property>
                                                 <child>
                                                   <object class="GtkListBoxRow" id="row_directory">
+                                                    <property name="activatable">False</property>
+                                                    <property name="selectable">False</property>
                                                     <child>
                                                       <object class="GtkGrid">
                                                         <child>
@@ -384,6 +415,8 @@
                                                         <child>
                                                           <object class="GtkStack" id="stk_directory_buttons">
                                                             <child>
+                                                            <object class="GtkStackPage" id="normal">
+                                                            <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
                                                             <object class="GtkButton">
@@ -408,20 +441,43 @@
                                                             </object>
                                                             </child>
                                                             </object>
+                                                            </property>
+                                                            </object>
                                                             </child>
                                                             <child>
+                                                            <object class="GtkStackPage" id="mid-edit">
+                                                            <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
-                                                            <object class="GtkButton" id="btn_save_new_directory">
-                                                            <property name="label">New</property>
+                                                            <object class="GtkButton" id="btn_save_directory">
+                                                            <property name="label">Save</property>
                                                             <layout>
                                                             <property name="column">0</property>
-                                                            <property name="column-span">1</property>
                                                             <property name="row">0</property>
-                                                            <property name="row-span">1</property>
                                                             </layout>
                                                             </object>
                                                             </child>
+                                                            <child>
+                                                            <object class="GtkButton" id="btn_cancel_directory_edit">
+                                                            <property name="label">Cancel</property>
+                                                            <layout>
+                                                            <property name="column">1</property>
+                                                            <property name="row">0</property>
+                                                            </layout>
+                                                            </object>
+                                                            </child>
+                                                            </object>
+                                                            </property>
+                                                            </object>
+                                                            </child>
+                                                            <child>
+                                                            <object class="GtkStackPage">
+                                                            <property name="child">
+                                                            <object class="GtkButton" id="btn_save_new_directory">
+                                                            <property name="label">New</property>
+                                                            </object>
+                                                            </property>
+                                                            <property name="name">new</property>
                                                             </object>
                                                             </child>
                                                             <layout>
@@ -522,60 +578,70 @@
                             <child>
                               <object class="GtkStack" id="stk_series_edit">
                                 <child>
-                                  <object class="GtkGrid">
-                                    <child>
-                                      <object class="GtkButton">
-                                        <property name="label">Delete</property>
-                                        <layout>
-                                          <property name="column">1</property>
-                                          <property name="column-span">1</property>
-                                          <property name="row">0</property>
-                                          <property name="row-span">1</property>
-                                        </layout>
+                                  <object class="GtkStackPage">
+                                    <property name="child">
+                                      <object class="GtkGrid">
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="label">Edit</property>
+                                            <layout>
+                                              <property name="column">0</property>
+                                              <property name="row">0</property>
+                                            </layout>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="label">Delete</property>
+                                            <layout>
+                                              <property name="column">1</property>
+                                              <property name="row">0</property>
+                                            </layout>
+                                          </object>
+                                        </child>
                                       </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkButton">
-                                        <property name="label">Edit</property>
-                                        <layout>
-                                          <property name="column">0</property>
-                                          <property name="column-span">1</property>
-                                          <property name="row">0</property>
-                                          <property name="row-span">1</property>
-                                        </layout>
-                                      </object>
-                                    </child>
+                                    </property>
+                                    <property name="name">normal</property>
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkGrid">
-                                    <child>
-                                      <object class="GtkButton" id="btn_save_series">
-                                        <property name="label">Save</property>
-                                        <layout>
-                                          <property name="column">0</property>
-                                          <property name="column-span">1</property>
-                                          <property name="row">0</property>
-                                          <property name="row-span">1</property>
-                                        </layout>
+                                  <object class="GtkStackPage" id="mid-edit">
+                                    <property name="child">
+                                      <object class="GtkGrid">
+                                        <child>
+                                          <object class="GtkButton" id="btn_save_series">
+                                            <property name="label">Save</property>
+                                            <layout>
+                                              <property name="column">0</property>
+                                              <property name="column-span">1</property>
+                                              <property name="row">0</property>
+                                              <property name="row-span">1</property>
+                                            </layout>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="btn_cancel_series_edit">
+                                            <property name="label">Cancel</property>
+                                            <layout>
+                                              <property name="column">1</property>
+                                              <property name="column-span">1</property>
+                                              <property name="row">0</property>
+                                              <property name="row-span">1</property>
+                                            </layout>
+                                          </object>
+                                        </child>
                                       </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkButton" id="btn_cancel_series_edit">
-                                        <property name="label">Cancel</property>
-                                        <layout>
-                                          <property name="column">1</property>
-                                          <property name="column-span">1</property>
-                                          <property name="row">0</property>
-                                          <property name="row-span">1</property>
-                                        </layout>
-                                      </object>
-                                    </child>
+                                    </property>
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="btn_save_new_series">
-                                    <property name="label">New</property>
+                                  <object class="GtkStackPage">
+                                    <property name="child">
+                                      <object class="GtkButton" id="btn_save_new_series">
+                                        <property name="label">New</property>
+                                      </object>
+                                    </property>
+                                    <property name="name">new</property>
                                   </object>
                                 </child>
                                 <layout>

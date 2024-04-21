@@ -207,6 +207,20 @@ impl WidgetForEditMode<bool> for gtk4::ToggleButton {
     }
 }
 
+impl WidgetForEditMode<bool> for gtk4::CheckButton {
+    fn set_editability(&self, editability: bool) {
+        self.set_sensitive(editability);
+    }
+
+    fn get_value(&self) -> bool {
+        self.is_active()
+    }
+
+    fn set_value(&self, value: bool) {
+        self.set_active(value);
+    }
+}
+
 impl WidgetForEditMode<u32> for gtk4::DropDown {
     fn set_editability(&self, editability: bool) {
         self.set_sensitive(editability);

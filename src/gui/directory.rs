@@ -27,14 +27,14 @@ pub struct DirectoryWidgets {
     #[prop_sync(set, get)]
     txt_directory_volume: gtk4::Entry,
     #[prop_sync("active" as bool, set, get)]
-    chk_directory_recursive: gtk4::ToggleButton,
+    chk_directory_recursive: gtk4::CheckButton,
     stk_directory_buttons: gtk4::Stack,
     btn_save_directory: gtk4::Button,
     btn_cancel_directory_edit: gtk4::Button,
     btn_save_new_directory: gtk4::Button,
     rvl_directory_scan_preview: gtk4::Revealer,
-    lsm_directory_scan_preview: gtk4::ListStore,
-    srt_directory_scan_preview: gtk4::TreeModelSort,
+    //lsm_directory_scan_preview: gtk4::ListStore,
+    //srt_directory_scan_preview: gtk4::TreeModelSort,
 }
 
 impl actix::Actor for DirectoryActor {
@@ -42,39 +42,39 @@ impl actix::Actor for DirectoryActor {
 
     fn started(&mut self, _ctx: &mut Self::Context) {
         self.update_widgets_from_model();
-        self.widgets
-            .srt_directory_scan_preview
-            .set_default_sort_func(|mdl, it1, it2| {
-                let parse_column = |it, column| {
-                    mdl.get_value(it, column)
-                        .get::<String>()
-                        .ok()
-                        .and_then(|s| s.parse::<i64>().ok())
-                };
-                let chap1 = parse_column(it1, 1);
-                let chap2 = parse_column(it2, 1);
-                match (chap1, chap2) {
-                    (Some(_), None) => core::cmp::Ordering::Less,
-                    (None, Some(_)) => core::cmp::Ordering::Greater,
-                    (None, None) => {
-                        let file1 = mdl.get_value(it1, 0).get::<String>().ok();
-                        let file2 = mdl.get_value(it2, 0).get::<String>().ok();
-                        file1.cmp(&file2)
-                    }
-                    (Some(chap1), Some(chap2)) => {
-                        let vol1 = parse_column(it1, 2);
-                        let vol2 = parse_column(it2, 2);
-                        match (vol1, vol2) {
-                            (None, None) => chap1.cmp(&chap2),
-                            (Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
-                            // These two shouldn't happen, but still:
-                            (Some(_), None) => core::cmp::Ordering::Less,
-                            (None, Some(_)) => core::cmp::Ordering::Greater,
-                        }
-                    }
-                }
-                .into()
-            });
+        //self.widgets
+            //.srt_directory_scan_preview
+            //.set_default_sort_func(|mdl, it1, it2| {
+                //let parse_column = |it, column| {
+                    //mdl.get_value(it, column)
+                        //.get::<String>()
+                        //.ok()
+                        //.and_then(|s| s.parse::<i64>().ok())
+                //};
+                //let chap1 = parse_column(it1, 1);
+                //let chap2 = parse_column(it2, 1);
+                //match (chap1, chap2) {
+                    //(Some(_), None) => core::cmp::Ordering::Less,
+                    //(None, Some(_)) => core::cmp::Ordering::Greater,
+                    //(None, None) => {
+                        //let file1 = mdl.get_value(it1, 0).get::<String>().ok();
+                        //let file2 = mdl.get_value(it2, 0).get::<String>().ok();
+                        //file1.cmp(&file2)
+                    //}
+                    //(Some(chap1), Some(chap2)) => {
+                        //let vol1 = parse_column(it1, 2);
+                        //let vol2 = parse_column(it2, 2);
+                        //match (vol1, vol2) {
+                            //(None, None) => chap1.cmp(&chap2),
+                            //(Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
+                            //// These two shouldn't happen, but still:
+                            //(Some(_), None) => core::cmp::Ordering::Less,
+                            //(None, Some(_)) => core::cmp::Ordering::Greater,
+                        //}
+                    //}
+                //}
+                //.into()
+            //});
     }
 }
 
@@ -146,12 +146,12 @@ impl DirectoryActor {
         })
         .on_restore({
             let rvl_directory_scan_preview = self.widgets.rvl_directory_scan_preview.clone();
-            let lsm_directory_scan_preview = self.widgets.lsm_directory_scan_preview.clone();
+            //let lsm_directory_scan_preview = self.widgets.lsm_directory_scan_preview.clone();
             rvl_directory_scan_preview.set_reveal_child(true);
-            lsm_directory_scan_preview.clear();
+            //lsm_directory_scan_preview.clear();
             move || {
                 rvl_directory_scan_preview.set_reveal_child(false);
-                lsm_directory_scan_preview.clear();
+                //lsm_directory_scan_preview.clear();
             }
         })
     }
@@ -459,25 +459,25 @@ impl actix::StreamHandler<PreviewEvent> for DirectoryActor {
 
 impl DirectoryActor {
     fn apply_pattern_to_preview(&self) {
-        let regex = match regex::Regex::new(self.widgets.txt_directory_pattern.text().as_str()) {
-            Ok(regex) => regex,
-            Err(_) => {
-                return;
-            }
-        };
-        let lsm = &self.widgets.lsm_directory_scan_preview;
-        lsm.clear();
-        for path in self.preview_unfiltered_paths.iter() {
-            if let Ok(decision) = crate::files_discovery::process_file_match(path, &regex) {
-                let it = lsm.append();
-                lsm.set_value(&it, 0, &path.to_value());
-                if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
-                    if let Some(volume) = volume {
-                        lsm.set_value(&it, 2, &volume.to_string().to_value());
-                    }
-                    lsm.set_value(&it, 1, &chapter.to_string().to_value());
-                }
-            }
-        }
+        //let regex = match regex::Regex::new(self.widgets.txt_directory_pattern.text().as_str()) {
+            //Ok(regex) => regex,
+            //Err(_) => {
+                //return;
+            //}
+        //};
+        //let lsm = &self.widgets.lsm_directory_scan_preview;
+        //lsm.clear();
+        //for path in self.preview_unfiltered_paths.iter() {
+            //if let Ok(decision) = crate::files_discovery::process_file_match(path, &regex) {
+                //let it = lsm.append();
+                //lsm.set_value(&it, 0, &path.to_value());
+                //if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
+                    //if let Some(volume) = volume {
+                        //lsm.set_value(&it, 2, &volume.to_string().to_value());
+                    //}
+                    //lsm.set_value(&it, 1, &chapter.to_string().to_value());
+                //}
+            //}
+        //}
     }
 }
