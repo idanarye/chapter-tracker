@@ -26,10 +26,10 @@ pub fn start_gui() -> woab::Result<()> {
 
         let factories = Factories::new(FactoriesInner {
             main: FactoriesMain::read(
-                &*crate::Asset::get("chapter_tracker_main.ui").unwrap().data,
+                &*crate::Asset::get("main.ui").unwrap().data,
             )?,
             media_types: FactoriesMediaTypes::read(
-                &*crate::Asset::get("chapter_tracker_media_types.ui")
+                &*crate::Asset::get("media_types.ui")
                     .unwrap()
                     .data,
             )?,

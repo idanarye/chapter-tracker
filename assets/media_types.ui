@@ -1,7 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- Created with Cambalache 0.90.1 -->
 <interface>
-  <!-- interface-name chapter_tracker_media_types.ui -->
   <requires lib="gtk" version="4.12"/>
   <object class="GtkWindow" id="win_media_types">
     <child>

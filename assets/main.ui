@@ -99,6 +99,7 @@
             <child>
               <object class="GtkButton">
                 <property name="label">Media Types</property>
+                <signal name="clicked" handler="open_media_types_window"/>
                 <layout>
                   <property name="column">5</property>
                   <property name="column-span">1</property>
