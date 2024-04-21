@@ -547,18 +547,20 @@ impl SeriesActor {
         self.widgets.set_props(&SeriesWidgetsPropSetter {
             txt_series_name: &self.model.name,
             drp_series_media_type: {
-                self.widgets
+                let model = self.widgets
                     .drp_series_media_type
                     .model()
-                    .unwrap()
-                    .iter::<MediaTypeGObject>()
+                    .unwrap();
+                let result = model.iter::<MediaTypeGObject>()
                     .position(|media_type| {
                         let Ok(media_type) = media_type else {
                             return false;
                         };
                         media_type.id() == self.model.media_type
                     })
-                    .unwrap_or_default() as u32
+                .map(|pos| pos as u32)
+                .unwrap_or_else(|| model.n_items());
+                result
             },
             txt_download_command: self.model.download_command.as_deref().unwrap_or(""),
             txt_download_command_dir: self.model.download_command_dir.as_deref().unwrap_or(""),

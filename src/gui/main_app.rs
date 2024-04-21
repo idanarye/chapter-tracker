@@ -294,8 +294,6 @@ impl actix::Handler<gui::msgs::UpdateMediaTypesList> for MainAppActor {
         _ctx: &mut Self::Context,
     ) -> Self::Result {
         self.lsm_media_types.remove_all();
-        self.lsm_media_types
-            .append(&MediaTypeGObject::new(0, "".to_owned()));
         Box::pin(
             stream_query::<models::MediaType>(sqlx::query_as("SELECT * FROM media_types"))
                 .into_actor(self)
