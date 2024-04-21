@@ -188,7 +188,7 @@ struct MediaTypeWidgets {
     #[prop_sync(set, get)]
     txt_media_type_program: gtk4::Entry,
     #[prop_sync("active" as bool, set, get)]
-    chk_media_type_maintain_symlinks: gtk4::ToggleButton,
+    chk_media_type_maintain_symlinks: gtk4::CheckButton,
     stk_media_type_edit: gtk4::Stack,
     btn_save_media_type: gtk4::Button,
     btn_cancel_media_type_edit: gtk4::Button,
