@@ -25,13 +25,9 @@ pub fn start_gui() -> woab::Result<()> {
         });
 
         let factories = Factories::new(FactoriesInner {
-            main: FactoriesMain::read(
-                &*crate::Asset::get("main.ui").unwrap().data,
-            )?,
+            main: FactoriesMain::read(&*crate::Asset::get("main.ui").unwrap().data)?,
             media_types: FactoriesMediaTypes::read(
-                &*crate::Asset::get("media_types.ui")
-                    .unwrap()
-                    .data,
+                &*crate::Asset::get("media_types.ui").unwrap().data,
             )?,
         });
 

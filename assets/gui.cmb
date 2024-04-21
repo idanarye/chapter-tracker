@@ -127,6 +127,7 @@
 	(1,6,"GtkCheckButton","label","Unread and/or Empty",None,None,None,None,None,None,None,None,None),
 	(1,8,"GtkButton","child",None,None,None,None,None,16,None,None,None,None),
 	(1,9,"GtkButton","child",None,None,None,None,None,13,None,None,None,None),
+	(1,10,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(1,11,"GtkButton","label","Media Types",None,None,None,None,None,None,None,None,None),
 	(1,12,"GtkButton","label","New Series",None,None,None,None,None,None,None,None,None),
 	(1,14,"GtkLabel","label","Clean Dangling",None,None,None,None,None,None,None,None,None),
@@ -440,7 +441,12 @@
 	(1,1,35,"GtkToggleButton","toggled","toggle_episodes",None,None,None,None,None),
 	(2,1,11,"GtkButton","clicked","open_media_types_window",None,None,None,None,None),
 	(3,2,18,"GtkButton","clicked","edit_media_type",None,None,None,None,None),
-	(4,2,19,"GtkButton","clicked","delete_media_type",None,None,None,None,None)
+	(4,2,19,"GtkButton","clicked","delete_media_type",None,None,None,None,None),
+	(5,1,6,"GtkCheckButton","toggled","series_unread_toggled",None,None,None,None,None),
+	(6,1,7,"GtkSearchEntry","search-changed","series_filter_changed",None,None,None,None,None),
+	(7,1,8,"GtkButton","clicked","scan_files",None,None,None,None,None),
+	(8,1,9,"GtkButton","clicked","clean_dangling",None,None,None,None,None),
+	(9,1,12,"GtkButton","clicked","new_series",None,None,None,None,None)
   </object_signal>
   <object_data>
 	(1,3,"GtkWidget",2,2,None,1,None,None,None,None),

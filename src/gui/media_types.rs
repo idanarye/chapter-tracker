@@ -347,7 +347,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                                 gtk4::ButtonsType::YesNo,
                                 &format!("Are you sure you want to delete {:?}?", media_type_name),
                             );
-                            let user_decision =dialog.run_future().await;
+                            let user_decision = dialog.run_future().await;
                             dialog.close();
                             if user_decision == gtk4::ResponseType::Yes {
                                 sqlx::query("DELETE FROM media_types WHERE id = ?")

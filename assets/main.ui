@@ -24,6 +24,7 @@
             <child>
               <object class="GtkCheckButton" id="chk_series_unread">
                 <property name="label">Unread and/or Empty</property>
+                <signal name="toggled" handler="series_unread_toggled"/>
                 <layout>
                   <property name="column">0</property>
                   <property name="column-span">1</property>
@@ -34,6 +35,7 @@
             </child>
             <child>
               <object class="GtkSearchEntry" id="txt_series_filter">
+                <signal name="search-changed" handler="series_filter_changed"/>
                 <layout>
                   <property name="column">1</property>
                   <property name="column-span">1</property>
@@ -56,6 +58,7 @@
                     </child>
                   </object>
                 </property>
+                <signal name="clicked" handler="scan_files"/>
                 <layout>
                   <property name="column">2</property>
                   <property name="column-span">1</property>
@@ -78,6 +81,7 @@
                     </child>
                   </object>
                 </property>
+                <signal name="clicked" handler="clean_dangling"/>
                 <layout>
                   <property name="column">3</property>
                   <property name="column-span">1</property>
@@ -88,6 +92,7 @@
             </child>
             <child>
               <object class="GtkSeparator">
+                <property name="hexpand">True</property>
                 <layout>
                   <property name="column">4</property>
                   <property name="column-span">1</property>
@@ -111,6 +116,7 @@
             <child>
               <object class="GtkButton">
                 <property name="label">New Series</property>
+                <signal name="clicked" handler="new_series"/>
                 <layout>
                   <property name="column">6</property>
                   <property name="column-span">1</property>

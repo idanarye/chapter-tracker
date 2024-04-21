@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use actix::prelude::*;
 use gtk4::prelude::*;
 
@@ -660,6 +662,7 @@ impl SeriesActor {
     }
 
     fn add_verifications_to_edit_mode(&self, edit_mode: EditMode) -> EditMode {
+        let media_types_model: gio::ListStore = self.widgets.drp_series_media_type.model().unwrap().downcast().unwrap();
         edit_mode
             .with_edit_widget(
                 self.widgets.txt_series_name.clone(),
@@ -673,18 +676,25 @@ impl SeriesActor {
                     }
                 },
             )
-            //.with_edit_widget(
-            //self.widgets.drp_series_media_type.clone(),
-            //"changed",
-            //self.model.media_type,
-            //|media_type| {
-            //if media_type < &0 {
-            //Err("media type must not be empty".to_owned())
-            //} else {
-            //Ok(())
-            //}
-            //},
-            //)
+            .with_edit_widget(
+                self.widgets.drp_series_media_type.clone(),
+                "notify::selected",
+                {
+                    self.model.media_type.try_into().ok().and_then(|media_type_id: i64| {
+                        media_types_model.iter::<MediaTypeGObject>().position(|media_type| {
+                            let Ok(media_type) = media_type else { return false };
+                            media_type.id() == media_type_id
+                        }).map(|pos| pos as u32)
+                    }).unwrap_or_else(|| media_types_model.n_items())
+                },
+                move |selected_index| {
+                    if media_types_model.item(*selected_index).is_some() {
+                        Ok(())
+                    } else {
+                        Err("media type must not be empty".to_owned())
+                    }
+                },
+            )
             .with_edit_widget(
                 self.widgets.txt_download_command.clone(),
                 "changed",
@@ -977,5 +987,20 @@ impl actix::Handler<crate::gui::msgs::RegisterActorAfterNew<crate::gui::director
         let crate::gui::msgs::RegisterActorAfterNew { id, addr } = msg;
         self.directories.insert(id, addr);
         self.add_row_for_new_directory(ctx);
+    }
+}
+
+impl SeriesWidgets {
+    pub fn configure_after_creation(&self, lsm_media_types: &gio::ListStore) {
+        self
+            .drp_series_media_type
+            .set_model(Some(lsm_media_types));
+        self.drp_series_media_type.set_expression(Some(
+                gtk4::PropertyExpression::new(
+                    MediaTypeGObject::static_type(),
+                    None::<gtk4::Expression>,
+                    "name",
+                ),
+        ));
     }
 }

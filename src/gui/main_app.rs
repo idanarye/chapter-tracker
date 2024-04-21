@@ -161,9 +161,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                     .row_series
                     .instantiate_route_to(series_ctx.address());
                 let widgets: SeriesWidgets = bld.widgets().unwrap();
-                widgets
-                    .drp_series_media_type
-                    .set_model(Some(&self.lsm_media_types));
+                widgets.configure_after_creation(&self.lsm_media_types);
                 self.widgets.lst_serieses.append(&widgets.row_series);
                 let data = models::Series {
                     id: -1,
@@ -324,13 +322,13 @@ impl actix::Handler<gui::msgs::UpdateSeriesesList> for MainAppActor {
                     query: sqlx::query_as(
                         r#"
                     SELECT serieses.*
-                        , SUM(episodes.id IS NOT NULL AND date_of_read IS NULL) AS num_unread
-                        , COUNT(episodes.id) AS num_episodes
+                    , SUM(episodes.id IS NOT NULL AND date_of_read IS NULL) AS num_unread
+                    , COUNT(episodes.id) AS num_episodes
                     FROM serieses
                     LEFT JOIN episodes ON serieses.id = episodes.series
                     GROUP BY serieses.id
                     ORDER BY serieses.id
-                "#,
+                    "#,
                     ),
                     id_dlg: |row_data: &FromRowWithExtra<
                         models::Series,
@@ -377,16 +375,7 @@ impl
                         .row_series
                         .instantiate_route_to(series_ctx.address());
                     let widgets: SeriesWidgets = bld.widgets().unwrap();
-                    widgets
-                        .drp_series_media_type
-                        .set_model(Some(&self.lsm_media_types));
-                    widgets.drp_series_media_type.set_expression(Some(
-                        gtk4::PropertyExpression::new(
-                            MediaTypeGObject::static_type(),
-                            None::<gtk4::Expression>,
-                            "name",
-                        ),
-                    ));
+                    widgets.configure_after_creation(&self.lsm_media_types);
                     self.series_sort_and_filter_data.set(
                         &widgets.row_series,
                         (data.extra.num_episodes, data.extra.num_unread, &data.data).into(),
