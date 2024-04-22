@@ -697,6 +697,7 @@
                               <object class="GtkDropDown" id="drp_series_media_type">
                                 <property name="enable-search">True</property>
                                 <property name="sensitive">False</property>
+                                <property name="width-request">150</property>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="column-span">1</property>

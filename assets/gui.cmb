@@ -151,6 +151,7 @@
 	(1,40,"GtkEntry","secondary-icon-name","emblem-unreadable",None,None,None,None,None,None,None,None,None),
 	(1,84,"GtkDropDown","enable-search","True",None,None,None,None,None,None,None,None,None),
 	(1,84,"GtkWidget","sensitive","False",None,None,None,None,None,None,None,None,None),
+	(1,84,"GtkWidget","width-request","150",None,None,None,None,None,None,None,None,None),
 	(1,100,"GtkStackPage","child",None,None,None,None,None,103,None,None,None,None),
 	(1,100,"GtkStackPage","name","normal",None,None,None,None,None,None,None,None,None),
 	(1,101,"GtkStackPage","child",None,None,None,None,None,104,None,None,None,None),
