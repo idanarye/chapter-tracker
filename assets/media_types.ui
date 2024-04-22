@@ -12,6 +12,7 @@
                 <child>
                   <object class="GtkEntry" id="txt_media_type_name">
                     <property name="editable">False</property>
+                    <property name="placeholder-text">Name</property>
                     <layout>
                       <property name="column">0</property>
                       <property name="column-span">1</property>
@@ -23,8 +24,10 @@
                 <child>
                   <object class="GtkEntry" id="txt_media_type_base_dir">
                     <property name="editable">False</property>
+                    <property name="placeholder-text">Base Directory</property>
                     <property name="primary-icon-name">folder</property>
                     <property name="secondary-icon-name">edit-clear-symbolic</property>
+                    <signal name="icon-press" handler="open_base_directory_dialog"/>
                     <layout>
                       <property name="column">1</property>
                       <property name="column-span">1</property>
@@ -36,6 +39,7 @@
                 <child>
                   <object class="GtkEntry" id="txt_media_type_file_types">
                     <property name="editable">False</property>
+                    <property name="placeholder-text">File Types</property>
                     <layout>
                       <property name="column">2</property>
                       <property name="column-span">1</property>
@@ -47,6 +51,7 @@
                 <child>
                   <object class="GtkEntry" id="txt_media_type_adjacent_file_types">
                     <property name="editable">False</property>
+                    <property name="placeholder-text">Adjacent File Types</property>
                     <layout>
                       <property name="column">3</property>
                       <property name="column-span">1</property>
@@ -58,6 +63,7 @@
                 <child>
                   <object class="GtkEntry" id="txt_media_type_program">
                     <property name="editable">False</property>
+                    <property name="placeholder-text">Program</property>
                     <layout>
                       <property name="column">4</property>
                       <property name="column-span">1</property>

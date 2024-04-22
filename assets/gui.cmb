@@ -225,12 +225,17 @@
 	(1,167,"GtkButton","label","New",None,None,None,None,None,None,None,None,None),
 	(1,169,"GtkTreeView","enable-grid-lines","both",None,None,None,None,None,None,None,None,None),
 	(2,5,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkEntry","placeholder-text","Name",None,None,None,None,None,None,None,None,None),
 	(2,6,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkEntry","placeholder-text","Base Directory",None,None,None,None,None,None,None,None,None),
 	(2,6,"GtkEntry","primary-icon-name","folder",None,None,None,None,None,None,None,None,None),
 	(2,6,"GtkEntry","secondary-icon-name","edit-clear-symbolic",None,None,None,None,None,None,None,None,None),
 	(2,7,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkEntry","placeholder-text","File Types",None,None,None,None,None,None,None,None,None),
 	(2,8,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkEntry","placeholder-text","Adjacent File Types",None,None,None,None,None,None,None,None,None),
 	(2,9,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
+	(2,9,"GtkEntry","placeholder-text","Program",None,None,None,None,None,None,None,None,None),
 	(2,10,"GtkCheckButton","label","Maintain Symlinks",None,None,None,None,None,None,None,None,None),
 	(2,10,"GtkWidget","sensitive","False",None,None,None,None,None,None,None,None,None),
 	(2,12,"GtkStackPage","child",None,None,None,None,None,15,None,None,None,None),
@@ -477,7 +482,8 @@
 	(23,1,144,"GtkButton","clicked","delete_episode",None,None,None,None,None),
 	(24,1,154,"GtkEntry","icon-release","open_directory_dir_dialog",None,None,None,None,None),
 	(25,1,160,"GtkButton","clicked","edit_directory",None,None,None,None,None),
-	(26,1,161,"GtkButton","clicked","delete_directory",None,None,None,None,None)
+	(26,1,161,"GtkButton","clicked","delete_directory",None,None,None,None,None),
+	(27,2,6,"GtkEntry","icon-press","open_base_directory_dialog",None,None,None,None,None)
   </object_signal>
   <object_data>
 	(1,3,"GtkWidget",2,2,None,1,None,None,None,None),
