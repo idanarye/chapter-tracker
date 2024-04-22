@@ -407,6 +407,7 @@
                                                             <object class="GtkEntry" id="txt_directory_dir">
                                                             <property name="editable">False</property>
                                                             <property name="primary-icon-name">folder</property>
+                                                            <signal name="icon-release" handler="open_directory_dir_dialog"/>
                                                             <layout>
                                                             <property name="column">1</property>
                                                             <property name="column-span">1</property>
@@ -441,12 +442,13 @@
                                                             <child>
                                                             <object class="GtkStack" id="stk_directory_buttons">
                                                             <child>
-                                                            <object class="GtkStackPage" id="normal">
+                                                            <object class="GtkStackPage">
                                                             <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label">Edit</property>
+                                                            <signal name="clicked" handler="edit_directory"/>
                                                             <layout>
                                                             <property name="column">0</property>
                                                             <property name="column-span">1</property>
@@ -458,6 +460,7 @@
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label">Delete</property>
+                                                            <signal name="clicked" handler="delete_directory"/>
                                                             <layout>
                                                             <property name="column">1</property>
                                                             <property name="column-span">1</property>
@@ -468,10 +471,11 @@
                                                             </child>
                                                             </object>
                                                             </property>
+                                                            <property name="name">normal</property>
                                                             </object>
                                                             </child>
                                                             <child>
-                                                            <object class="GtkStackPage" id="mid-edit">
+                                                            <object class="GtkStackPage">
                                                             <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
@@ -494,6 +498,7 @@
                                                             </child>
                                                             </object>
                                                             </property>
+                                                            <property name="name">mid-edit</property>
                                                             </object>
                                                             </child>
                                                             <child>
