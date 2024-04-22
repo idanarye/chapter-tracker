@@ -184,6 +184,7 @@
                                                         </child>
                                                         <child>
                                                           <object class="GtkEntry" id="txt_volume">
+                                                            <property name="editable">False</property>
                                                             <layout>
                                                             <property name="column">1</property>
                                                             <property name="column-span">1</property>
@@ -205,6 +206,7 @@
                                                         </child>
                                                         <child>
                                                           <object class="GtkEntry" id="txt_chapter">
+                                                            <property name="editable">False</property>
                                                             <layout>
                                                             <property name="column">3</property>
                                                             <property name="column-span">1</property>
@@ -215,6 +217,7 @@
                                                         </child>
                                                         <child>
                                                           <object class="GtkEntry" id="txt_name">
+                                                            <property name="editable">False</property>
                                                             <property name="hexpand">True</property>
                                                             <layout>
                                                             <property name="column">4</property>
@@ -232,6 +235,7 @@
                                                             <object class="GtkButton">
                                                             <property name="css-classes">episode-is-not-read</property>
                                                             <property name="label">Mark Read</property>
+                                                            <signal name="clicked" handler="mark_read"/>
                                                             </object>
                                                             </property>
                                                             <property name="name">episode-is-not-read</property>
@@ -243,6 +247,7 @@
                                                             <object class="GtkButton">
                                                             <property name="css-classes">episode-is-read</property>
                                                             <property name="label">Mark Unread</property>
+                                                            <signal name="clicked" handler="mark_unread"/>
                                                             </object>
                                                             </property>
                                                             <property name="name">episode-is-read</property>
@@ -259,6 +264,7 @@
                                                         <child>
                                                           <object class="GtkButton">
                                                             <property name="label">Play</property>
+                                                            <signal name="clicked" handler="play_episode"/>
                                                             <layout>
                                                             <property name="column">7</property>
                                                             <property name="column-span">1</property>
@@ -269,6 +275,7 @@
                                                         </child>
                                                         <child>
                                                           <object class="GtkEntry" id="txt_file">
+                                                            <property name="editable">False</property>
                                                             <layout>
                                                             <property name="column">5</property>
                                                             <property name="column-span">1</property>
@@ -286,6 +293,7 @@
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label">Edit</property>
+                                                            <signal name="clicked" handler="edit_episode"/>
                                                             <layout>
                                                             <property name="column">0</property>
                                                             <property name="column-span">1</property>
@@ -297,6 +305,7 @@
                                                             <child>
                                                             <object class="GtkButton">
                                                             <property name="label">Delete</property>
+                                                            <signal name="clicked" handler="delete_episode"/>
                                                             <layout>
                                                             <property name="column">1</property>
                                                             <property name="column-span">1</property>
@@ -311,7 +320,7 @@
                                                             </object>
                                                             </child>
                                                             <child>
-                                                            <object class="GtkStackPage" id="mid-edit">
+                                                            <object class="GtkStackPage">
                                                             <property name="child">
                                                             <object class="GtkGrid">
                                                             <child>
@@ -338,6 +347,7 @@
                                                             </child>
                                                             </object>
                                                             </property>
+                                                            <property name="name">mid-edit</property>
                                                             </object>
                                                             </child>
                                                             <layout>
