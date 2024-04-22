@@ -47,36 +47,34 @@ impl EditMode {
         });
         if let Err(err) = validate(&widget.get_value()) {
             widget.set_tooltip_text(Some(&err));
-            widget.style_context().add_class("bad-input");
+            widget.add_css_class("bad-input");
         }
         let signal_handler_id = widget.connect_local(widget_update_signal, false, {
             let widget = widget.clone();
             move |_args| {
-                let style_context = widget.style_context();
                 let value = widget.get_value();
                 if value == saved_value {
-                    style_context.remove_class("unsaved-change");
+                    widget.remove_css_class("unsaved-change");
                 } else {
-                    style_context.add_class("unsaved-change");
+                    widget.add_css_class("unsaved-change");
                 }
                 if let Err(err) = validate(&value) {
                     widget.set_tooltip_text(Some(&err));
-                    style_context.add_class("bad-input");
+                    widget.add_css_class("bad-input");
                 } else {
                     widget.set_tooltip_text(None);
-                    style_context.remove_class("bad-input");
+                    widget.remove_css_class("bad-input");
                 }
                 None
             }
         });
         widget.set_editability(true);
-        widget.style_context().add_class("being-edited");
+        widget.add_css_class("being-edited");
         self.restoration_callbacks.push(Box::new(move || {
             widget.set_tooltip_text(None);
-            let style_context = widget.style_context();
-            style_context.remove_class("being-edited");
-            style_context.remove_class("unsaved-change");
-            style_context.remove_class("bad-input");
+            widget.remove_css_class("being-edited");
+            widget.remove_css_class("unsaved-change");
+            widget.remove_css_class("bad-input");
             widget.set_editability(false);
             widget.disconnect(signal_handler_id);
         }));
@@ -95,7 +93,7 @@ impl EditMode {
             let save_fut = woab::wake_from_signal(&self.save_button, |tx| {
                 self.save_button.connect_clicked(move |_| {
                     for widget in widgets.iter() {
-                        if widget.style_context().has_class("bad-input") {
+                        if widget.has_css_class("bad-input") {
                             return;
                         }
                     }
@@ -164,32 +162,6 @@ impl WidgetForEditMode<String> for gtk4::Entry {
 
     fn set_value(&self, value: String) {
         self.set_text(&value);
-    }
-}
-
-impl WidgetForEditMode<i64> for gtk4::ComboBox {
-    fn set_editability(&self, editability: bool) {
-        self.set_button_sensitivity(if editability {
-            gtk4::SensitivityType::On
-        } else {
-            gtk4::SensitivityType::Off
-        });
-    }
-
-    fn get_value(&self) -> i64 {
-        if let Some(active_id) = self.active_id() {
-            active_id.parse().unwrap_or(-1)
-        } else {
-            -1
-        }
-    }
-
-    fn set_value(&self, value: i64) {
-        if 0 <= value {
-            self.set_active_id(Some(&value.to_string()));
-        } else {
-            self.set_active_id(None);
-        }
     }
 }
 

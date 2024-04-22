@@ -149,20 +149,20 @@ impl actix::Handler<woab::Signal> for SeriesActor {
                 None
             }
             "delete_series" => {
-                let dialog = gtk4::MessageDialog::new(
-                    find_window_widget(self.widgets.row_series.clone()).as_ref(),
-                    gtk4::DialogFlags::MODAL,
-                    gtk4::MessageType::Warning,
-                    gtk4::ButtonsType::YesNo,
-                    &format!("Are you sure you want to delete {:?}?", self.model.name),
-                );
+                let dialog = gtk4::AlertDialog::builder()
+                    .message(&format!(
+                        "Are you sure you want to delete {:?}?",
+                        self.model.name
+                    ))
+                    .buttons(["Yes", "No"])
+                    .build();
+                let window = find_window_widget(self.widgets.row_series.clone());
                 let series_id = self.model.id;
                 let addr = ctx.address();
                 ctx.spawn(
                     async move {
-                        let result = dialog.run_future().await;
-                        dialog.close();
-                        if result != gtk4::ResponseType::Yes {
+                        let result = dialog.choose_future(window.as_ref()).await;
+                        if result != Ok(0) {
                             return;
                         }
                         let query = sqlx::query(
@@ -469,18 +469,18 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                 let episode = &self.episodes[&episode_id];
                 let lst_episodes = self.widgets.lst_episodes.clone();
                 let row_episode = episode.widgets.row_episode.clone();
-                let dialog = gtk4::MessageDialog::new(
-                    find_window_widget(self.widgets.row_series.clone()).as_ref(),
-                    gtk4::DialogFlags::MODAL,
-                    gtk4::MessageType::Warning,
-                    gtk4::ButtonsType::YesNo,
-                    &format!("Are you sure you want to delete {:?}?", episode.model.name),
-                );
+                let dialog = gtk4::AlertDialog::builder()
+                    .message(&format!(
+                        "Are you sure you want to delete {:?}?",
+                        episode.model.name
+                    ))
+                    .buttons(["Yes", "No"])
+                    .build();
+                let window = find_window_widget(self.widgets.row_series.clone());
                 ctx.spawn(
                     async move {
-                        let result = dialog.run_future().await;
-                        dialog.close();
-                        if result != gtk4::ResponseType::Yes {
+                        let result = dialog.choose_future(window.as_ref()).await;
+                        if result != Ok(0) {
                             return;
                         }
                         let query = sqlx::query(

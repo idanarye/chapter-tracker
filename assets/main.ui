@@ -521,11 +521,13 @@
                                                             </child>
                                                             <child>
                                                             <object class="GtkRevealer" id="rvl_directory_scan_preview">
-                                                            <child>
-                                                            <object class="GtkTreeView">
-                                                            <property name="enable-grid-lines">both</property>
+                                                            <property name="child">
+                                                            <object class="GtkColumnView" id="clv_directory_scan_preview">
+                                                            <property name="height-request">200</property>
+                                                            <property name="show-column-separators">True</property>
+                                                            <property name="show-row-separators">True</property>
                                                             </object>
-                                                            </child>
+                                                            </property>
                                                             <layout>
                                                             <property name="column">0</property>
                                                             <property name="column-span">5</property>

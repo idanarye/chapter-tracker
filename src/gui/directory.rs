@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use actix::prelude::*;
 use gtk4::prelude::*;
 
@@ -8,6 +10,8 @@ use crate::util::edit_mode::EditMode;
 
 use sqlx::prelude::*;
 
+use super::gobjects::ScanPreviewItemGObject;
+
 #[derive(typed_builder::TypedBuilder, woab::Removable)]
 #[removable(self.widgets.row_directory in gtk4::ListBox)]
 pub struct DirectoryActor {
@@ -16,6 +20,8 @@ pub struct DirectoryActor {
     series: actix::Addr<crate::gui::series::SeriesActor>,
     #[builder(setter(skip), default)]
     preview_unfiltered_paths: Vec<String>,
+    #[builder(setter(skip), default = gio::ListStore::new::<ScanPreviewItemGObject>())]
+    lsm_preview_model: gio::ListStore,
 }
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
@@ -34,8 +40,7 @@ pub struct DirectoryWidgets {
     btn_cancel_directory_edit: gtk4::Button,
     btn_save_new_directory: gtk4::Button,
     rvl_directory_scan_preview: gtk4::Revealer,
-    //lsm_directory_scan_preview: gtk4::ListStore,
-    //srt_directory_scan_preview: gtk4::TreeModelSort,
+    clv_directory_scan_preview: gtk4::ColumnView,
 }
 
 impl actix::Actor for DirectoryActor {
@@ -43,39 +48,52 @@ impl actix::Actor for DirectoryActor {
 
     fn started(&mut self, _ctx: &mut Self::Context) {
         self.update_widgets_from_model();
-        //self.widgets
-        //.srt_directory_scan_preview
-        //.set_default_sort_func(|mdl, it1, it2| {
-        //let parse_column = |it, column| {
-        //mdl.get_value(it, column)
-        //.get::<String>()
-        //.ok()
-        //.and_then(|s| s.parse::<i64>().ok())
-        //};
-        //let chap1 = parse_column(it1, 1);
-        //let chap2 = parse_column(it2, 1);
-        //match (chap1, chap2) {
-        //(Some(_), None) => core::cmp::Ordering::Less,
-        //(None, Some(_)) => core::cmp::Ordering::Greater,
-        //(None, None) => {
-        //let file1 = mdl.get_value(it1, 0).get::<String>().ok();
-        //let file2 = mdl.get_value(it2, 0).get::<String>().ok();
-        //file1.cmp(&file2)
-        //}
-        //(Some(chap1), Some(chap2)) => {
-        //let vol1 = parse_column(it1, 2);
-        //let vol2 = parse_column(it2, 2);
-        //match (vol1, vol2) {
-        //(None, None) => chap1.cmp(&chap2),
-        //(Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
-        //// These two shouldn't happen, but still:
-        //(Some(_), None) => core::cmp::Ordering::Less,
-        //(None, Some(_)) => core::cmp::Ordering::Greater,
-        //}
-        //}
-        //}
-        //.into()
-        //});
+
+        fn make_factory<O>(extractor: impl 'static + Fn(O) -> String) -> gtk4::SignalListItemFactory
+        where
+            O: ObjectType,
+            glib::Object: glib::object::MayDowncastTo<O>,
+        {
+            let factory = gtk4::SignalListItemFactory::new();
+            factory.connect_setup(|_, cell| {
+                let label = gtk4::Label::builder().halign(gtk4::Align::Start).build();
+                cell.downcast_ref::<gtk4::ColumnViewCell>()
+                    .unwrap()
+                    .set_child(Some(&label));
+            });
+            factory.connect_bind(move |_, cell| {
+                let cell = cell.downcast_ref::<gtk4::ColumnViewCell>().unwrap();
+                let label = cell.child().unwrap().downcast::<gtk4::Label>().unwrap();
+                let item = cell.item().unwrap().downcast::<O>().unwrap();
+                label.set_label(&extractor(item));
+            });
+            factory
+        }
+
+        for column in [
+            gtk4::ColumnViewColumn::builder()
+                .title("Volume")
+                .factory(&make_factory(|obj: ScanPreviewItemGObject| obj.volume()))
+                .build(),
+            gtk4::ColumnViewColumn::builder()
+                .title("Chapter")
+                .factory(&make_factory(|obj: ScanPreviewItemGObject| obj.chapter()))
+                .build(),
+            gtk4::ColumnViewColumn::builder()
+                .title("Path")
+                .factory(&make_factory(|obj: ScanPreviewItemGObject| obj.path()))
+                .expand(true)
+                .build(),
+        ] {
+            self.widgets
+                .clv_directory_scan_preview
+                .append_column(&column);
+        }
+        self.widgets
+            .clv_directory_scan_preview
+            .set_model(Some(&gtk4::SingleSelection::new(Some(
+                self.lsm_preview_model.clone(),
+            ))));
     }
 }
 
@@ -147,12 +165,9 @@ impl DirectoryActor {
         })
         .on_restore({
             let rvl_directory_scan_preview = self.widgets.rvl_directory_scan_preview.clone();
-            //let lsm_directory_scan_preview = self.widgets.lsm_directory_scan_preview.clone();
             rvl_directory_scan_preview.set_reveal_child(true);
-            //lsm_directory_scan_preview.clear();
             move || {
                 rvl_directory_scan_preview.set_reveal_child(false);
-                //lsm_directory_scan_preview.clear();
             }
         })
     }
@@ -235,23 +250,20 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
                 None
             }
             "delete_directory" => {
-                let dialog = gtk4::MessageDialog::new(
-                    find_window_widget(self.widgets.row_directory.clone()).as_ref(),
-                    gtk4::DialogFlags::MODAL,
-                    gtk4::MessageType::Warning,
-                    gtk4::ButtonsType::YesNo,
-                    &format!(
+                let dialog = gtk4::AlertDialog::builder()
+                    .buttons(["Yes", "No"])
+                    .message(&format!(
                         "Are you sure you want to delete {:?} on {:?}?",
                         self.model.pattern, self.model.dir
-                    ),
-                );
+                    ))
+                    .build();
                 let directory_id = self.model.id;
                 let addr = ctx.address();
+                let window = find_window_widget(self.widgets.row_directory.clone());
                 ctx.spawn(
                     async move {
-                        let result = dialog.run_future().await;
-                        dialog.close();
-                        if result != gtk4::ResponseType::Yes {
+                        let result = dialog.choose_future(window.as_ref()).await;
+                        if result != Ok(0) {
                             return;
                         }
                         let query = sqlx::query(
@@ -461,25 +473,57 @@ impl actix::StreamHandler<PreviewEvent> for DirectoryActor {
 
 impl DirectoryActor {
     fn apply_pattern_to_preview(&self) {
-        //let regex = match regex::Regex::new(self.widgets.txt_directory_pattern.text().as_str()) {
-        //Ok(regex) => regex,
-        //Err(_) => {
-        //return;
-        //}
-        //};
-        //let lsm = &self.widgets.lsm_directory_scan_preview;
-        //lsm.clear();
-        //for path in self.preview_unfiltered_paths.iter() {
-        //if let Ok(decision) = crate::files_discovery::process_file_match(path, &regex) {
-        //let it = lsm.append();
-        //lsm.set_value(&it, 0, &path.to_value());
-        //if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
-        //if let Some(volume) = volume {
-        //lsm.set_value(&it, 2, &volume.to_string().to_value());
-        //}
-        //lsm.set_value(&it, 1, &chapter.to_string().to_value());
-        //}
-        //}
-        //}
+        let regex = match regex::Regex::new(self.widgets.txt_directory_pattern.text().as_str()) {
+            Ok(regex) => regex,
+            Err(_) => {
+                return;
+            }
+        };
+        let lsm = &self.lsm_preview_model;
+        lsm.remove_all();
+        for path in self.preview_unfiltered_paths.iter() {
+            if let Ok(decision) = crate::files_discovery::process_file_match(path, &regex) {
+                let volume_text: String;
+                let chapter_text: String;
+                if let Some(crate::files_discovery::FileData { volume, chapter }) = decision {
+                    if let Some(volume) = volume {
+                        volume_text = volume.to_string();
+                    } else {
+                        volume_text = Default::default();
+                    }
+                    chapter_text = chapter.to_string()
+                } else {
+                    volume_text = Default::default();
+                    chapter_text = Default::default();
+                }
+                lsm.append(&ScanPreviewItemGObject::new(
+                    volume_text,
+                    chapter_text,
+                    path.to_owned(),
+                ));
+            }
+        }
+        lsm.sort(|obj1, obj2| {
+            let obj1: &ScanPreviewItemGObject = obj1.downcast_ref().unwrap();
+            let obj2: &ScanPreviewItemGObject = obj2.downcast_ref().unwrap();
+            let chap1 = obj1.chapter().parse::<i64>().ok();
+            let chap2 = obj2.chapter().parse::<i64>().ok();
+            match (chap1, chap2) {
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => obj1.path().cmp(&obj2.path()),
+                (Some(chap1), Some(chap2)) => {
+                    let vol1 = obj1.volume().parse::<i64>().ok();
+                    let vol2 = obj2.volume().parse::<i64>().ok();
+                    match (vol1, vol2) {
+                        (None, None) => chap1.cmp(&chap2),
+                        (Some(vol1), Some(vol2)) => (vol1, chap1).cmp(&(vol2, chap2)),
+                        // These two shouldn't happen, but still:
+                        (Some(_), None) => Ordering::Less,
+                        (None, Some(_)) => Ordering::Greater,
+                    }
+                }
+            }
+        });
     }
 }

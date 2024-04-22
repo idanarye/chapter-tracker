@@ -23,7 +23,7 @@ actix = "0.13"
 rust-embed = "8.3.0"
 #woab = "0.8.0"
  woab = { path = "../woab"}
-gtk4 = "0.8"
+gtk4 = { version = "0.8", features = ["v4_12"] }
 glib = "0.19"
 hashbrown = "0.14"
 fuzzy-matcher = "0.3"

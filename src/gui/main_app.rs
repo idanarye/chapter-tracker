@@ -73,7 +73,7 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                     app: gtk4::Application,
                 ) = msg.params()?;
                 app.add_window(&self.widgets.app_main);
-                self.widgets.app_main.show();
+                self.widgets.app_main.set_visible(true);
                 None
             }
             "app_shutdown" => {

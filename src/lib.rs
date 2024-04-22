@@ -15,7 +15,7 @@ struct Asset;
 impl Asset {
     pub fn css_provider(filename: &str) -> gtk4::CssProvider {
         let css_provider = gtk4::CssProvider::new();
-        css_provider.load_from_data(
+        css_provider.load_from_string(
             std::str::from_utf8(Self::get(filename).unwrap().data.as_ref()).unwrap(),
         );
         css_provider
