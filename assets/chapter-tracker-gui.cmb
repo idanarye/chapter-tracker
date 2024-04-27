@@ -99,6 +99,7 @@
 	(1,167,"GtkButton","btn_save_new_directory",166,None,None,None,None,None,None),
 	(1,168,"GtkRevealer","rvl_directory_scan_preview",152,None,None,None,5,None,None),
 	(1,169,"GtkColumnView","clv_directory_scan_preview",168,None,None,None,-1,None,None),
+	(1,170,"GtkButton",None,2,None,None,None,None,None,None),
 	(2,1,"GtkWindow","win_media_types",None,None,None,None,None,None,None),
 	(2,2,"GtkListBox","lst_media_types",1,None,None,None,None,None,None),
 	(2,3,"GtkListBoxRow","row_media_type",2,None,None,None,None,None,None),
@@ -124,6 +125,7 @@
   <object_property>
 	(1,3,"GtkLabel","label","Chapter Tracker",None,None,None,None,None,None,None,None,None),
 	(1,3,"GtkWidget","css-classes","title",None,None,None,None,None,None,None,None,None),
+	(1,3,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(1,4,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(1,5,"GtkWidget","height-request","400",None,None,None,None,None,None,None,None,None),
 	(1,6,"GtkCheckButton","label","Unread and/or Empty",None,None,None,None,None,None,None,None,None),
@@ -228,6 +230,7 @@
 	(1,169,"GtkColumnView","show-column-separators","True",None,None,None,None,None,None,None,None,None),
 	(1,169,"GtkColumnView","show-row-separators","True",None,None,None,None,None,None,None,None,None),
 	(1,169,"GtkWidget","height-request","200",None,None,None,None,None,None,None,None,None),
+	(1,170,"GtkButton","icon-name","window-close-symbolic",None,None,None,None,None,None,None,None,None),
 	(2,5,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
 	(2,5,"GtkEntry","placeholder-text","Name",None,None,None,None,None,None,None,None,None),
 	(2,6,"GtkEditable","editable","False",None,None,None,None,None,None,None,None,None),
@@ -260,13 +263,17 @@
 	(1,2,3,"GtkGridLayoutChild","row","0",None,None,None,None),
 	(1,2,3,"GtkGridLayoutChild","row-span","1",None,None,None,None),
 	(1,2,4,"GtkGridLayoutChild","column","0",None,None,None,None),
-	(1,2,4,"GtkGridLayoutChild","column-span","1",None,None,None,None),
+	(1,2,4,"GtkGridLayoutChild","column-span","2",None,None,None,None),
 	(1,2,4,"GtkGridLayoutChild","row","1",None,None,None,None),
 	(1,2,4,"GtkGridLayoutChild","row-span","1",None,None,None,None),
 	(1,2,5,"GtkGridLayoutChild","column","0",None,None,None,None),
-	(1,2,5,"GtkGridLayoutChild","column-span","1",None,None,None,None),
+	(1,2,5,"GtkGridLayoutChild","column-span","2",None,None,None,None),
 	(1,2,5,"GtkGridLayoutChild","row","2",None,None,None,None),
 	(1,2,5,"GtkGridLayoutChild","row-span","1",None,None,None,None),
+	(1,2,170,"GtkGridLayoutChild","column","1",None,None,None,None),
+	(1,2,170,"GtkGridLayoutChild","column-span","1",None,None,None,None),
+	(1,2,170,"GtkGridLayoutChild","row","0",None,None,None,None),
+	(1,2,170,"GtkGridLayoutChild","row-span","1",None,None,None,None),
 	(1,4,6,"GtkGridLayoutChild","column","0",None,None,None,None),
 	(1,4,6,"GtkGridLayoutChild","column-span","1",None,None,None,None),
 	(1,4,6,"GtkGridLayoutChild","row","0",None,None,None,None),
@@ -487,7 +494,8 @@
 	(24,1,154,"GtkEntry","icon-release","open_directory_dir_dialog",None,None,None,None,None),
 	(25,1,160,"GtkButton","clicked","edit_directory",None,None,None,None,None),
 	(26,1,161,"GtkButton","clicked","delete_directory",None,None,None,None,None),
-	(27,2,6,"GtkEntry","icon-press","open_base_directory_dialog",None,None,None,None,None)
+	(27,2,6,"GtkEntry","icon-press","open_base_directory_dialog",None,None,None,None,None),
+	(28,1,170,"GtkButton","clicked","close_button_clicked",None,None,None,None,None)
   </object_signal>
   <object_data>
 	(1,3,"GtkWidget",2,2,None,1,None,None,None,None),

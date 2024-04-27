@@ -83,6 +83,10 @@ impl actix::Handler<woab::Signal> for MainAppActor {
                 app.quit();
                 None
             }
+            "close_button_clicked" => {
+                self.widgets.app_main.close();
+                None
+            }
             "series_unread_toggled" => {
                 self.update_series_filter();
                 None
