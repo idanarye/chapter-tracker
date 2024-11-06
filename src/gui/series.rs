@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use actix::prelude::*;
 use gtk4::prelude::*;
 
@@ -150,7 +148,7 @@ impl actix::Handler<woab::Signal> for SeriesActor {
             }
             "delete_series" => {
                 let dialog = gtk4::AlertDialog::builder()
-                    .message(&format!(
+                    .message(format!(
                         "Are you sure you want to delete {:?}?",
                         self.model.name
                     ))
@@ -470,7 +468,7 @@ impl actix::Handler<woab::Signal<i64>> for SeriesActor {
                 let lst_episodes = self.widgets.lst_episodes.clone();
                 let row_episode = episode.widgets.row_episode.clone();
                 let dialog = gtk4::AlertDialog::builder()
-                    .message(&format!(
+                    .message(format!(
                         "Are you sure you want to delete {:?}?",
                         episode.model.name
                     ))
@@ -688,10 +686,7 @@ impl SeriesActor {
                 self.widgets.drp_series_media_type.clone(),
                 "notify::selected",
                 {
-                    self.model
-                        .media_type
-                        .try_into()
-                        .ok()
+                    Some(self.model.media_type)
                         .and_then(|media_type_id: i64| {
                             media_types_model
                                 .iter::<MediaTypeGObject>()

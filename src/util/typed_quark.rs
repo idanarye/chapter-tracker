@@ -7,10 +7,7 @@ pub struct TypedQuark<T: 'static> {
 
 impl<T: 'static> Clone for TypedQuark<T> {
     fn clone(&self) -> Self {
-        TypedQuark {
-            quark: self.quark,
-            _phantom: Default::default(),
-        }
+        *self
     }
 }
 

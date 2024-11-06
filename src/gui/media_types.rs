@@ -327,7 +327,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                                 .unwrap();
                         if 0 < num_serieses {
                             gtk4::AlertDialog::builder()
-                                .message(&format!(
+                                .message(format!(
                                     "Cannot delete {:?} - {} serieses are using it. Okay?",
                                     media_type_name, num_serieses
                                 ))
@@ -338,7 +338,7 @@ impl actix::Handler<woab::Signal<i64>> for MediaTypesActor {
                             false
                         } else {
                             let user_decision = gtk4::AlertDialog::builder()
-                                .message(&format!(
+                                .message(format!(
                                     "Are you sure you want to delete {:?}?",
                                     media_type_name
                                 ))

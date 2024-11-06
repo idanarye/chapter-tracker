@@ -252,7 +252,7 @@ impl actix::Handler<woab::Signal> for DirectoryActor {
             "delete_directory" => {
                 let dialog = gtk4::AlertDialog::builder()
                     .buttons(["Yes", "No"])
-                    .message(&format!(
+                    .message(format!(
                         "Are you sure you want to delete {:?} on {:?}?",
                         self.model.pattern, self.model.dir
                     ))
