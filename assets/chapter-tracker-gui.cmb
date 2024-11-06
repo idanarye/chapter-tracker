@@ -178,6 +178,7 @@
 	(1,125,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
 	(1,126,"GtkListBoxRow","activatable","False",None,None,None,None,None,None,None,None,None),
 	(1,126,"GtkListBoxRow","selectable","False",None,None,None,None,None,None,None,None,None),
+	(1,126,"GtkWidget","css-classes","episode",None,None,None,None,None,None,None,None,None),
 	(1,126,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(1,127,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(1,128,"GtkLabel","label","Vol:",None,None,None,None,None,None,None,None,None),

@@ -30,3 +30,7 @@ entry.bad-input, dropdown.bad-input button {
 tooltip {
     font-family: monospace;
 }
+
+.episode:hover, .episode:hover entry {
+    background-color: lightyellow;
+}

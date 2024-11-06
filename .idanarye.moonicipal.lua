@@ -1,14 +1,11 @@
 local moonicipal = require'moonicipal'
 local T = moonicipal.tasks_file()
 
-moonicipal.include(require'idan.project.rust' {
-    crate_name = 'chapter_tracker',
-    cli_args_for_targets = {
-        ['chapter-tracker'] = {
-            {'--linksdir', 'episodes-links'},
-        }
-    },
-})
+local _, cfg = moonicipal.import(require'idan.project.rust')
+cfg.crate_name = 'chapter_tracker'
+cfg.cli_args_for_targets['chapter-tracker'] = {
+    {'--linksdir', 'episodes-links'},
+}
 
 local blunder = require'blunder'
 local channelot = require'channelot'
