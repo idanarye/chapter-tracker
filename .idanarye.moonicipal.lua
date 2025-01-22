@@ -33,3 +33,8 @@ function T:reset_db()
     blunder.create_window_for_terminal()
     vim.fn.termopen{'cp', '--verbose', 'chapter_tracker.db3.old', 'chapter_tracker.db3'}
 end
+
+function T:save_current_db_as_backup()
+    blunder.create_window_for_terminal()
+    vim.fn.termopen{'cp', '--verbose', 'chapter_tracker.db3', 'chapter_tracker.db3.old'}
+end

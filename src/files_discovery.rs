@@ -31,7 +31,7 @@ pub async fn run_files_discovery(
     log::info!("{:?}", series_to_adjacent_types);
 
     let mut directories = HashMap::<(String, bool), Vec<models::Directory>>::new();
-    sqlx::query_as::<_, models::Directory>("SELECT id, series, replace(pattern, '(?<', '(?P<') AS pattern, dir, volume, recursive FROM directories").fetch(con.acquire().await?).try_for_each(|directory| {
+    sqlx::query_as::<_, models::Directory>("SELECT id, series, pattern, dir, volume, recursive FROM directories").fetch(con.acquire().await?).try_for_each(|directory| {
         if let Some(entry) = directories.get_mut(&(directory.dir.clone(), directory.recursive)) {
             entry.push(directory);
         } else {

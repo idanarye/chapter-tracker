@@ -27,7 +27,7 @@ type SqliteQueryAs<'q, O> = sqlx::query::QueryAs<
     'q,
     sqlx::sqlite::Sqlite,
     O,
-    <sqlx::sqlite::Sqlite as sqlx::database::HasArguments<'q>>::Arguments,
+    <sqlx::Sqlite as sqlx::Database>::Arguments<'q>,
 >;
 
 #[derive(structopt::StructOpt, Debug)]

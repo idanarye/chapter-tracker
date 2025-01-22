@@ -10,22 +10,22 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sqlx = { version = "0.7", default-features = false, features = [ "runtime-tokio", "macros", "sqlite", "chrono", "migrate" ] }
-tokio = { version = "1.5.0", features = ["full"] }
-tokio-stream = { version = "0.1.5", features = ["fs"] }
-anyhow = "1.0.40"
-log = "0.4.14"
-flexi_logger = "0.28"
-typed-builder = "0.18"
-futures = "0.3.14"
-regex = "1.4.5"
+sqlx = { version = "0.8", default-features = false, features = [ "runtime-tokio", "macros", "sqlite", "chrono", "migrate" ] }
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["fs"] }
+anyhow = "1"
+log = "0.4"
+flexi_logger = "0.29"
+typed-builder = "0.20"
+futures = "0.3"
+regex = "1"
 actix = "0.13"
 rust-embed = "8.3.0"
 #woab = "0.8.0"
  woab = { path = "../woab"}
 gtk4 = { version = "0.8", features = ["v4_12"] }
 glib = "0.19"
-hashbrown = "0.14"
+hashbrown = "0.15"
 fuzzy-matcher = "0.3"
 gio = "0.19"
 structopt = "0.3.21"
